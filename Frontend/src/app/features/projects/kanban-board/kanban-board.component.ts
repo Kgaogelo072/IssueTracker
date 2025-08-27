@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, RouterModule, Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CdkDragDrop, DragDropModule, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import { ProjectService } from '../../../core/services/project.service';
@@ -238,10 +238,10 @@ import { Project, Issue, IssueStatus, IssuePriority, IssueType, CreateIssueReque
                 <span class="label-text">Type</span>
               </label>
               <select class="select select-bordered w-full" formControlName="type">
-                <option [value]="IssueType.Task">Task</option>
-                <option [value]="IssueType.Bug">Bug</option>
-                <option [value]="IssueType.Feature">Feature</option>
-                <option [value]="IssueType.Epic">Epic</option>
+                <option [ngValue]="IssueType.Task">Task</option>
+                <option [ngValue]="IssueType.Bug">Bug</option>
+                <option [ngValue]="IssueType.Feature">Feature</option>
+                <option [ngValue]="IssueType.Epic">Epic</option>
               </select>
             </div>
           </div>
@@ -262,10 +262,10 @@ import { Project, Issue, IssueStatus, IssuePriority, IssueType, CreateIssueReque
               <span class="label-text">Priority</span>
             </label>
             <select class="select select-bordered w-full" formControlName="priority">
-              <option [value]="IssuePriority.Low">Low</option>
-              <option [value]="IssuePriority.Medium">Medium</option>
-              <option [value]="IssuePriority.High">High</option>
-              <option [value]="IssuePriority.Critical">Critical</option>
+              <option [ngValue]="IssuePriority.Low">Low</option>
+              <option [ngValue]="IssuePriority.Medium">Medium</option>
+              <option [ngValue]="IssuePriority.High">High</option>
+              <option [ngValue]="IssuePriority.Critical">Critical</option>
             </select>
           </div>
 
@@ -315,6 +315,7 @@ export class KanbanBoardComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private projectService: ProjectService,
     private issueService: IssueService,
     private fb: FormBuilder
@@ -444,8 +445,8 @@ export class KanbanBoardComponent implements OnInit {
   }
 
   openIssueDetail(issue: Issue) {
-    // TODO: Implement issue detail modal or navigation
-    console.log('Open issue detail:', issue);
+    // Navigate to issue detail page
+    this.router.navigate(['/issues', issue.id]);
   }
 
   getPriorityClass(priority: IssuePriority): string {
