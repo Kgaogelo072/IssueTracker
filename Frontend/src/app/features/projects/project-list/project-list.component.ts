@@ -28,7 +28,7 @@ import { Project, CreateProjectRequest } from '../../../core/models';
           
           <div class="flex items-center gap-2 mt-2">
             <div class="avatar">
-              <div class="w-6 h-6 rounded-full bg-primary text-primary-content text-xs flex items-center justify-center">
+              <div class="w-6 h-6 rounded-full bg-primary text-primary-content text-xs flex items-center justify-center font-semibold leading-none">
                 {{ project.owner.firstName.charAt(0) }}{{ project.owner.lastName.charAt(0) }}
               </div>
             </div>

@@ -37,6 +37,8 @@ import { Project, Issue, IssueStatus, IssuePriority, IssueType, CreateIssueReque
           </h3>
           <div 
             cdkDropList 
+            id="todo-list"
+            [cdkDropListConnectedTo]="connectedLists"
             [cdkDropListData]="todoIssues"
             (cdkDropListDropped)="drop($event)"
             class="min-h-[400px] space-y-3">
@@ -85,6 +87,8 @@ import { Project, Issue, IssueStatus, IssuePriority, IssueType, CreateIssueReque
           </h3>
           <div 
             cdkDropList 
+            id="in-progress-list"
+            [cdkDropListConnectedTo]="connectedLists"
             [cdkDropListData]="inProgressIssues"
             (cdkDropListDropped)="drop($event)"
             class="min-h-[400px] space-y-3">
@@ -126,6 +130,8 @@ import { Project, Issue, IssueStatus, IssuePriority, IssueType, CreateIssueReque
           </h3>
           <div 
             cdkDropList 
+            id="in-review-list"
+            [cdkDropListConnectedTo]="connectedLists"
             [cdkDropListData]="inReviewIssues"
             (cdkDropListDropped)="drop($event)"
             class="min-h-[400px] space-y-3">
@@ -167,6 +173,8 @@ import { Project, Issue, IssueStatus, IssuePriority, IssueType, CreateIssueReque
           </h3>
           <div 
             cdkDropList 
+            id="done-list"
+            [cdkDropListConnectedTo]="connectedLists"
             [cdkDropListData]="doneIssues"
             (cdkDropListDropped)="drop($event)"
             class="min-h-[400px] space-y-3">
@@ -294,6 +302,9 @@ export class KanbanBoardComponent implements OnInit {
   inProgressIssues: Issue[] = [];
   inReviewIssues: Issue[] = [];
   doneIssues: Issue[] = [];
+
+  // Drag-drop connected lists (must match the template cdkDropList IDs)
+  connectedLists: string[] = ['todo-list', 'in-progress-list', 'in-review-list', 'done-list'];
 
   createIssueForm: FormGroup;
 
