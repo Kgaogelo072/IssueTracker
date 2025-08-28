@@ -18,7 +18,7 @@ import { Project, Issue, IssueStatus, IssuePriority, IssueType, CreateIssueReque
           <h1 class="text-3xl font-bold">{{ project.name }}</h1>
           <p class="text-base-content/70">{{ project.description }}</p>
         </div>
-        <button class="btn btn-primary" onclick="create_issue_modal.showModal()">
+        <button class="btn btn-outline btn-sm" onclick="create_issue_modal.showModal()">
           <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
           </svg>
@@ -270,10 +270,10 @@ import { Project, Issue, IssueStatus, IssuePriority, IssueType, CreateIssueReque
           </div>
 
           <div class="modal-action">
-            <button type="button" class="btn" onclick="create_issue_modal.close()">Cancel</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="create_issue_modal.close()">Cancel</button>
             <button 
               type="submit" 
-              class="btn btn-primary"
+              class="btn btn-outline btn-sm"
               [disabled]="createIssueForm.invalid || isCreatingIssue">
               Create Issue
             </button>

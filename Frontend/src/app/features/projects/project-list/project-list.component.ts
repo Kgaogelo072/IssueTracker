@@ -12,7 +12,7 @@ import { Project, CreateProjectRequest } from '../../../core/models';
   template: `
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-3xl font-bold">Projects</h1>
-      <button class="btn btn-primary" onclick="create_project_modal.showModal()">
+      <button class="btn btn-outline btn-sm" onclick="create_project_modal.showModal()">
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
         </svg>
@@ -39,7 +39,7 @@ import { Project, CreateProjectRequest } from '../../../core/models';
               <button class="btn btn-sm btn-ghost" [routerLink]="['/projects', project.id]">
                 View
               </button>
-              <button class="btn btn-sm btn-primary" [routerLink]="['/projects', project.id, 'kanban']">
+              <button class="btn btn-outline btn-sm" [routerLink]="['/projects', project.id, 'kanban']">
                 Kanban
               </button>
             </div>

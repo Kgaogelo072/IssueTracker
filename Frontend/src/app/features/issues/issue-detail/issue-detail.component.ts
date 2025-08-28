@@ -79,7 +79,7 @@ import { Issue, Comment, CreateCommentRequest, IssueStatus, IssuePriority, Issue
             <div class="flex justify-end">
               <button 
                 type="submit" 
-                class="btn btn-primary btn-sm"
+                class="btn btn-outline btn-sm"
                 [disabled]="commentForm.invalid || isAddingComment">
                 <span *ngIf="!isAddingComment">Add Comment</span>
                 <span *ngIf="isAddingComment">Adding...</span>
