@@ -38,11 +38,6 @@ import { Issue, Comment, CreateCommentRequest, IssueStatus, IssuePriority, Issue
             <div class="flex items-center gap-4">
               <div class="flex items-center gap-2">
                 <span class="text-sm text-base-content/70">Created by:</span>
-                <div class="avatar">
-                  <div class="w-6 h-6 rounded-full bg-primary text-primary-content text-xs flex items-center justify-center">
-                    {{ issue.creator.firstName.charAt(0) }}{{ issue.creator.lastName.charAt(0) }}
-                  </div>
-                </div>
                 <span class="text-sm">{{ issue.creator.fullName }}</span>
               </div>
               <div class="text-sm text-base-content/70">
@@ -99,15 +94,8 @@ import { Issue, Comment, CreateCommentRequest, IssueStatus, IssuePriority, Issue
               class="border border-base-300 rounded-lg p-4">
               <div class="flex justify-between items-start mb-2">
                 <div class="flex items-center gap-2">
-                  <div class="avatar">
-                    <div class="w-8 h-8 rounded-full bg-primary text-primary-content text-sm flex items-center justify-center">
-                      {{ comment.author.firstName.charAt(0) }}{{ comment.author.lastName.charAt(0) }}
-                    </div>
-                  </div>
-                  <div>
                     <div class="font-medium text-sm">{{ comment.author.fullName }}</div>
                     <div class="text-xs text-base-content/70">{{ comment.createdAt | date:'medium' }}</div>
-                  </div>
                 </div>
                 <button 
                   class="btn btn-ghost btn-xs text-error"

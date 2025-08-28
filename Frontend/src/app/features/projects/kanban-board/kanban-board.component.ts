@@ -82,7 +82,7 @@ import { Project, Issue, IssueStatus, IssuePriority, IssueType, CreateIssueReque
       <div class="kanban-column">
         <div class="bg-base-200 p-4 rounded-lg">
           <h3 class="font-semibold mb-4 flex items-center">
-            <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+            <div class="w-3 h-3 bg-primary rounded-full mr-2"></div>
             In Progress ({{ inProgressIssues.length }})
           </h3>
           <div 

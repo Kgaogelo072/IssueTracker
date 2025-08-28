@@ -28,11 +28,6 @@ import { Project, ProjectRole, AddMemberRequest, UpdateProjectRequest } from '..
               
               <div class="flex flex-wrap items-center gap-4">
                 <div class="flex items-center gap-3 bg-base-200 rounded-lg px-4 py-2">
-                  <div class="avatar">
-                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary via-accent to-secondary text-white font-bold flex items-center justify-center leading-none shadow-xl ring-2 ring-primary/30 hover:scale-105 transition-all duration-200">
-                      {{ project.owner.firstName.charAt(0) }}{{ project.owner.lastName.charAt(0) }}
-                    </div>
-                  </div>
                   <div>
                     <div class="text-sm font-medium text-base-content/60">Project Owner</div>
                     <div class="font-semibold">{{ project.owner.fullName }}</div>
@@ -102,11 +97,6 @@ import { Project, ProjectRole, AddMemberRequest, UpdateProjectRequest } from '..
                 <tr *ngFor="let member of project.members" class="hover:bg-base-50">
                   <td class="py-4">
                     <div class="flex items-center gap-4">
-                      <div class="avatar">
-                        <div class="w-14 h-14 rounded-full bg-gradient-to-br from-primary via-accent to-secondary text-white font-bold flex items-center justify-center text-lg leading-none shadow-xl ring-2 ring-primary/30 hover:scale-110 transition-all duration-300 cursor-pointer">
-                          {{ member.user.firstName.charAt(0) }}{{ member.user.lastName.charAt(0) }}
-                        </div>
-                      </div>
                       <div>
                         <div class="font-bold text-base-content">{{ member.user.fullName }}</div>
                         <div class="text-sm text-base-content/60">{{ member.user.email }}</div>
