@@ -19,7 +19,7 @@ import { Project, ProjectRole, AddMemberRequest, UpdateProjectRequest } from '..
             <div class="flex-1">
               <div class="flex items-center gap-3 mb-3">
                 <h1 class="text-3xl font-bold text-base-content">{{ project.name }}</h1>
-                <div class="badge badge-primary badge-lg">{{ project.issueCount }} Issues</div>
+                <div class="font-semibold bg-base-200 rounded-lg px-4 py-2">{{ project.issueCount }} Issues</div>
               </div>
               
               <p class="text-base-content/70 text-lg mb-4 leading-relaxed">
@@ -53,7 +53,7 @@ import { Project, ProjectRole, AddMemberRequest, UpdateProjectRequest } from '..
                 </svg>
                 Edit Project
               </button>
-              <button class="btn btn-primary btn-lg" [routerLink]="['/projects', project.id, 'kanban']">
+              <button class="btn btn-outline btn-lg" [routerLink]="['/projects', project.id, 'kanban']">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path>
                 </svg>
@@ -72,7 +72,7 @@ import { Project, ProjectRole, AddMemberRequest, UpdateProjectRequest } from '..
                 <p class="text-base-content/60 mt-1">Manage project team members and their roles</p>
               </div>
               <button 
-                class="btn btn-primary" 
+                class="btn btn-outline btn-lg" 
                 onclick="add_member_modal.showModal()"
                 *ngIf="isOwner">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -104,7 +104,7 @@ import { Project, ProjectRole, AddMemberRequest, UpdateProjectRequest } from '..
                     </div>
                   </td>
                   <td class="py-4">
-                    <div class="badge badge-lg" [class.badge-primary]="member.role === ProjectRole.Admin" [class.badge-outline]="member.role !== ProjectRole.Admin">
+                    <div class="font-bold text-base-content bg-base-200 rounded-lg px-4 py-2" [class.badge-primary]="member.role === ProjectRole.Admin" [class.badge-outline]="member.role !== ProjectRole.Admin">
                       {{ member.role === ProjectRole.Admin ? 'Admin' : 'Member' }}
                     </div>
                   </td>
@@ -174,7 +174,7 @@ import { Project, ProjectRole, AddMemberRequest, UpdateProjectRequest } from '..
             <button type="button" class="btn btn-outline btn-lg" onclick="edit_project_modal.close()">Cancel</button>
             <button 
               type="submit" 
-              class="btn btn-primary btn-lg"
+              class="btn btn-outline btn-lg"
               [disabled]="editProjectForm.invalid || isUpdating">
               <span *ngIf="isUpdating" class="loading loading-spinner loading-sm mr-2"></span>
               {{ isUpdating ? 'Updating...' : 'Update Project' }}
@@ -235,7 +235,7 @@ import { Project, ProjectRole, AddMemberRequest, UpdateProjectRequest } from '..
             <button type="button" class="btn btn-outline btn-lg" onclick="add_member_modal.close()">Cancel</button>
             <button 
               type="submit" 
-              class="btn btn-primary btn-lg"
+              class="btn btn-outline btn-lg"
               [disabled]="addMemberForm.invalid || isAddingMember">
               <span *ngIf="isAddingMember" class="loading loading-spinner loading-sm mr-2"></span>
               {{ isAddingMember ? 'Adding...' : 'Add Member' }}

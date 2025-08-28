@@ -1,204 +1,236 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterModule, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { CdkDragDrop, DragDropModule, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
-import { ProjectService } from '../../../core/services/project.service';
+import { CdkDropList, CdkDropListGroup, CdkDrag, CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import { IssueService } from '../../../core/services/issue.service';
-import { Project, Issue, IssueStatus, IssuePriority, IssueType, CreateIssueRequest, UpdateIssueRequest } from '../../../core/models';
+import { ProjectService } from '../../../core/services/project.service';
+import { Issue, Project, CreateIssueRequest, UpdateIssueRequest, IssueStatus, IssuePriority, IssueType, ProjectMember } from '../../../core/models';
 
 @Component({
   selector: 'app-kanban-board',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, DragDropModule],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, CdkDropListGroup, CdkDropList, CdkDrag],
   template: `
-    <div class="mb-6" *ngIf="project">
+    <div *ngIf="project" class="max-w-7xl mx-auto space-y-6">
+      <!-- Project Header -->
       <div class="flex justify-between items-center">
         <div>
           <h1 class="text-3xl font-bold">{{ project.name }}</h1>
-          <p class="text-base-content/70">{{ project.description }}</p>
+          <p class="text-base-content/70 mt-1">{{ project.description }}</p>
         </div>
-        <button class="btn btn-outline btn-sm" onclick="create_issue_modal.showModal()">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-          </svg>
-          New Issue
+        <button class="btn btn-outline btn-sm" (click)="openCreateModal()">
+          Create Issue
         </button>
       </div>
-    </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6" *ngIf="!isLoading">
-      <!-- Todo Column -->
-      <div class="kanban-column">
-        <div class="bg-base-200 p-4 rounded-lg">
-          <h3 class="font-semibold mb-4 flex items-center">
-            <div class="w-3 h-3 bg-gray-400 rounded-full mr-2"></div>
-            Todo ({{ todoIssues.length }})
-          </h3>
+      <!-- Kanban Board -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <!-- Todo Column -->
+        <div class="bg-base-200 rounded-lg p-4">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-semibold">Todo ({{ todoIssues.length }})</h3>
+          </div>
           <div 
-            cdkDropList 
+            cdkDropList
             id="todo-list"
-            [cdkDropListConnectedTo]="connectedLists"
             [cdkDropListData]="todoIssues"
-            (cdkDropListDropped)="drop($event)"
-            class="min-h-[400px] space-y-3">
+            [cdkDropListConnectedTo]="connectedLists"
+            (cdkDropListDropped)="onDrop($event)"
+            class="space-y-3 min-h-[200px]">
             <div 
               *ngFor="let issue of todoIssues" 
               cdkDrag
-              class="issue-card bg-base-100 p-4 rounded-lg shadow cursor-pointer"
-              (click)="openIssueDetail(issue)">
-              <div class="flex justify-between items-start mb-2">
-                <h4 class="font-medium text-sm">{{ issue.title }}</h4>
-                <div class="badge badge-sm" [ngClass]="getPriorityClass(issue.priority)">
-                  {{ getPriorityText(issue.priority) }}
-                </div>
-              </div>
-              <p class="text-xs text-base-content/70 mb-3 line-clamp-2">{{ issue.description }}</p>
-              <div class="flex justify-between items-center">
-                <div class="badge badge-outline badge-xs">{{ getTypeText(issue.type) }}</div>
-                <div class="flex -space-x-1" *ngIf="issue.assignees.length > 0">
-                  <div 
-                    *ngFor="let assignee of issue.assignees.slice(0, 3)" 
-                    class="avatar">
-                    <div class="w-6 h-6 rounded-full bg-primary text-primary-content text-xs flex items-center justify-center">
-                      {{ assignee.firstName.charAt(0) }}{{ assignee.lastName.charAt(0) }}
+              class="card bg-base-100 shadow-sm cursor-move">
+              <div class="card-body p-4">
+                <div class="flex justify-between items-start mb-2">
+                  <div class="flex items-center gap-2">
+                    <div class="badge badge-outline badge-xs">{{ getTypeText(issue.type) }}</div>
+                    <div class="badge badge-xs" [ngClass]="getPriorityClass(issue.priority)">
+                      {{ getPriorityText(issue.priority) }}
                     </div>
                   </div>
-                  <div 
-                    *ngIf="issue.assignees.length > 3"
-                    class="avatar">
-                    <div class="w-6 h-6 rounded-full bg-base-300 text-base-content text-xs flex items-center justify-center">
+                </div>
+                <h4 class="font-medium text-sm line-clamp-2 mb-2" (click)="openIssueDetail(issue)">
+                  {{ issue.title }}
+                </h4>
+                <div class="flex items-center justify-between">
+                  <div class="flex -space-x-1" *ngIf="issue.assignees.length > 0">
+                    <div 
+                      *ngFor="let assignee of issue.assignees.slice(0, 3)"
+                      class="avatar tooltip"
+                      [attr.data-tip]="assignee.fullName">
+                      <div class="w-6 h-6 rounded-full bg-primary text-primary-content text-xs flex items-center justify-center">
+                        {{ assignee.firstName.charAt(0) }}{{ assignee.lastName.charAt(0) }}
+                      </div>
+                    </div>
+                    <div 
+                      *ngIf="issue.assignees.length > 3"
+                      class="w-6 h-6 rounded-full bg-base-300 text-base-content text-xs flex items-center justify-center">
                       +{{ issue.assignees.length - 3 }}
                     </div>
                   </div>
+                  <div class="text-xs text-base-content/70">
+                    {{ issue.createdAt | date:'shortDate' }}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- In Progress Column -->
-      <div class="kanban-column">
-        <div class="bg-base-200 p-4 rounded-lg">
-          <h3 class="font-semibold mb-4 flex items-center">
-            <div class="w-3 h-3 bg-primary rounded-full mr-2"></div>
-            In Progress ({{ inProgressIssues.length }})
-          </h3>
+        <!-- In Progress Column -->
+        <div class="bg-base-200 rounded-lg p-4">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-semibold">In Progress ({{ inProgressIssues.length }})</h3>
+          </div>
           <div 
-            cdkDropList 
+            cdkDropList
             id="in-progress-list"
-            [cdkDropListConnectedTo]="connectedLists"
             [cdkDropListData]="inProgressIssues"
-            (cdkDropListDropped)="drop($event)"
-            class="min-h-[400px] space-y-3">
+            [cdkDropListConnectedTo]="connectedLists"
+            (cdkDropListDropped)="onDrop($event)"
+            class="space-y-3 min-h-[200px]">
             <div 
               *ngFor="let issue of inProgressIssues" 
               cdkDrag
-              class="issue-card bg-base-100 p-4 rounded-lg shadow cursor-pointer"
-              (click)="openIssueDetail(issue)">
-              <div class="flex justify-between items-start mb-2">
-                <h4 class="font-medium text-sm">{{ issue.title }}</h4>
-                <div class="badge badge-sm" [ngClass]="getPriorityClass(issue.priority)">
-                  {{ getPriorityText(issue.priority) }}
-                </div>
-              </div>
-              <p class="text-xs text-base-content/70 mb-3 line-clamp-2">{{ issue.description }}</p>
-              <div class="flex justify-between items-center">
-                <div class="badge badge-outline badge-xs">{{ getTypeText(issue.type) }}</div>
-                <div class="flex -space-x-1" *ngIf="issue.assignees.length > 0">
-                  <div 
-                    *ngFor="let assignee of issue.assignees.slice(0, 3)" 
-                    class="avatar">
-                    <div class="w-6 h-6 rounded-full bg-primary text-primary-content text-xs flex items-center justify-center">
-                      {{ assignee.firstName.charAt(0) }}{{ assignee.lastName.charAt(0) }}
+              class="card bg-base-100 shadow-sm cursor-move">
+              <div class="card-body p-4">
+                <div class="flex justify-between items-start mb-2">
+                  <div class="flex items-center gap-2">
+                    <div class="badge badge-outline badge-xs">{{ getTypeText(issue.type) }}</div>
+                    <div class="badge badge-xs" [ngClass]="getPriorityClass(issue.priority)">
+                      {{ getPriorityText(issue.priority) }}
                     </div>
+                  </div>
+                </div>
+                <h4 class="font-medium text-sm line-clamp-2 mb-2" (click)="openIssueDetail(issue)">
+                  {{ issue.title }}
+                </h4>
+                <div class="flex items-center justify-between">
+                  <div class="flex -space-x-1" *ngIf="issue.assignees.length > 0">
+                    <div 
+                      *ngFor="let assignee of issue.assignees.slice(0, 3)"
+                      class="avatar tooltip"
+                      [attr.data-tip]="assignee.fullName">
+                      <div class="w-6 h-6 rounded-full bg-primary text-primary-content text-xs flex items-center justify-center">
+                        {{ assignee.firstName.charAt(0) }}{{ assignee.lastName.charAt(0) }}
+                      </div>
+                    </div>
+                    <div 
+                      *ngIf="issue.assignees.length > 3"
+                      class="w-6 h-6 rounded-full bg-base-300 text-base-content text-xs flex items-center justify-center">
+                      +{{ issue.assignees.length - 3 }}
+                    </div>
+                  </div>
+                  <div class="text-xs text-base-content/70">
+                    {{ issue.createdAt | date:'shortDate' }}
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- In Review Column -->
-      <div class="kanban-column">
-        <div class="bg-base-200 p-4 rounded-lg">
-          <h3 class="font-semibold mb-4 flex items-center">
-            <div class="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
-            In Review ({{ inReviewIssues.length }})
-          </h3>
+        <!-- In Review Column -->
+        <div class="bg-base-200 rounded-lg p-4">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-semibold">In Review ({{ inReviewIssues.length }})</h3>
+          </div>
           <div 
-            cdkDropList 
+            cdkDropList
             id="in-review-list"
-            [cdkDropListConnectedTo]="connectedLists"
             [cdkDropListData]="inReviewIssues"
-            (cdkDropListDropped)="drop($event)"
-            class="min-h-[400px] space-y-3">
+            [cdkDropListConnectedTo]="connectedLists"
+            (cdkDropListDropped)="onDrop($event)"
+            class="space-y-3 min-h-[200px]">
             <div 
               *ngFor="let issue of inReviewIssues" 
               cdkDrag
-              class="issue-card bg-base-100 p-4 rounded-lg shadow cursor-pointer"
-              (click)="openIssueDetail(issue)">
-              <div class="flex justify-between items-start mb-2">
-                <h4 class="font-medium text-sm">{{ issue.title }}</h4>
-                <div class="badge badge-sm" [ngClass]="getPriorityClass(issue.priority)">
-                  {{ getPriorityText(issue.priority) }}
-                </div>
-              </div>
-              <p class="text-xs text-base-content/70 mb-3 line-clamp-2">{{ issue.description }}</p>
-              <div class="flex justify-between items-center">
-                <div class="badge badge-outline badge-xs">{{ getTypeText(issue.type) }}</div>
-                <div class="flex -space-x-1" *ngIf="issue.assignees.length > 0">
-                  <div 
-                    *ngFor="let assignee of issue.assignees.slice(0, 3)" 
-                    class="avatar">
-                    <div class="w-6 h-6 rounded-full bg-primary text-primary-content text-xs flex items-center justify-center">
-                      {{ assignee.firstName.charAt(0) }}{{ assignee.lastName.charAt(0) }}
+              class="card bg-base-100 shadow-sm cursor-move">
+              <div class="card-body p-4">
+                <div class="flex justify-between items-start mb-2">
+                  <div class="flex items-center gap-2">
+                    <div class="badge badge-outline badge-xs">{{ getTypeText(issue.type) }}</div>
+                    <div class="badge badge-xs" [ngClass]="getPriorityClass(issue.priority)">
+                      {{ getPriorityText(issue.priority) }}
                     </div>
+                  </div>
+                </div>
+                <h4 class="font-medium text-sm line-clamp-2 mb-2" (click)="openIssueDetail(issue)">
+                  {{ issue.title }}
+                </h4>
+                <div class="flex items-center justify-between">
+                  <div class="flex -space-x-1" *ngIf="issue.assignees.length > 0">
+                    <div 
+                      *ngFor="let assignee of issue.assignees.slice(0, 3)"
+                      class="avatar tooltip"
+                      [attr.data-tip]="assignee.fullName">
+                      <div class="w-6 h-6 rounded-full bg-primary text-primary-content text-xs flex items-center justify-center">
+                        {{ assignee.firstName.charAt(0) }}{{ assignee.lastName.charAt(0) }}
+                      </div>
+                    </div>
+                    <div 
+                      *ngIf="issue.assignees.length > 3"
+                      class="w-6 h-6 rounded-full bg-base-300 text-base-content text-xs flex items-center justify-center">
+                      +{{ issue.assignees.length - 3 }}
+                    </div>
+                  </div>
+                  <div class="text-xs text-base-content/70">
+                    {{ issue.createdAt | date:'shortDate' }}
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Done Column -->
-      <div class="kanban-column">
-        <div class="bg-base-200 p-4 rounded-lg">
-          <h3 class="font-semibold mb-4 flex items-center">
-            <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-            Done ({{ doneIssues.length }})
-          </h3>
+        <!-- Done Column -->
+        <div class="bg-base-200 rounded-lg p-4">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-semibold">Done ({{ doneIssues.length }})</h3>
+          </div>
           <div 
-            cdkDropList 
+            cdkDropList
             id="done-list"
-            [cdkDropListConnectedTo]="connectedLists"
             [cdkDropListData]="doneIssues"
-            (cdkDropListDropped)="drop($event)"
-            class="min-h-[400px] space-y-3">
+            [cdkDropListConnectedTo]="connectedLists"
+            (cdkDropListDropped)="onDrop($event)"
+            class="space-y-3 min-h-[200px]">
             <div 
               *ngFor="let issue of doneIssues" 
               cdkDrag
-              class="issue-card bg-base-100 p-4 rounded-lg shadow cursor-pointer opacity-75"
-              (click)="openIssueDetail(issue)">
-              <div class="flex justify-between items-start mb-2">
-                <h4 class="font-medium text-sm">{{ issue.title }}</h4>
-                <div class="badge badge-sm" [ngClass]="getPriorityClass(issue.priority)">
-                  {{ getPriorityText(issue.priority) }}
-                </div>
-              </div>
-              <p class="text-xs text-base-content/70 mb-3 line-clamp-2">{{ issue.description }}</p>
-              <div class="flex justify-between items-center">
-                <div class="badge badge-outline badge-xs">{{ getTypeText(issue.type) }}</div>
-                <div class="flex -space-x-1" *ngIf="issue.assignees.length > 0">
-                  <div 
-                    *ngFor="let assignee of issue.assignees.slice(0, 3)" 
-                    class="avatar">
-                    <div class="w-6 h-6 rounded-full bg-primary text-primary-content text-xs flex items-center justify-center">
-                      {{ assignee.firstName.charAt(0) }}{{ assignee.lastName.charAt(0) }}
+              class="card bg-base-100 shadow-sm cursor-move">
+              <div class="card-body p-4">
+                <div class="flex justify-between items-start mb-2">
+                  <div class="flex items-center gap-2">
+                    <div class="badge badge-outline badge-xs">{{ getTypeText(issue.type) }}</div>
+                    <div class="badge badge-xs" [ngClass]="getPriorityClass(issue.priority)">
+                      {{ getPriorityText(issue.priority) }}
                     </div>
+                  </div>
+                </div>
+                <h4 class="font-medium text-sm line-clamp-2 mb-2" (click)="openIssueDetail(issue)">
+                  {{ issue.title }}
+                </h4>
+                <div class="flex items-center justify-between">
+                  <div class="flex -space-x-1" *ngIf="issue.assignees.length > 0">
+                    <div 
+                      *ngFor="let assignee of issue.assignees.slice(0, 3)"
+                      class="avatar tooltip"
+                      [attr.data-tip]="assignee.fullName">
+                      <div class="w-6 h-6 rounded-full bg-primary text-primary-content text-xs flex items-center justify-center">
+                        {{ assignee.firstName.charAt(0) }}{{ assignee.lastName.charAt(0) }}
+                      </div>
+                    </div>
+                    <div 
+                      *ngIf="issue.assignees.length > 3"
+                      class="w-6 h-6 rounded-full bg-base-300 text-base-content text-xs flex items-center justify-center">
+                      +{{ issue.assignees.length - 3 }}
+                    </div>
+                  </div>
+                  <div class="text-xs text-base-content/70">
+                    {{ issue.createdAt | date:'shortDate' }}
                   </div>
                 </div>
               </div>
@@ -206,10 +238,6 @@ import { Project, Issue, IssueStatus, IssuePriority, IssueType, CreateIssueReque
           </div>
         </div>
       </div>
-    </div>
-
-    <div *ngIf="isLoading" class="flex justify-center py-12">
-      <span class="loading loading-spinner loading-lg"></span>
     </div>
 
     <!-- Create Issue Modal -->
@@ -257,16 +285,38 @@ import { Project, Issue, IssueStatus, IssuePriority, IssueType, CreateIssueReque
               rows="4"></textarea>
           </div>
 
-          <div class="form-control w-full mb-6">
-            <label class="label">
-              <span class="label-text">Priority</span>
-            </label>
-            <select class="select select-bordered w-full" formControlName="priority">
-              <option [ngValue]="IssuePriority.Low">Low</option>
-              <option [ngValue]="IssuePriority.Medium">Medium</option>
-              <option [ngValue]="IssuePriority.High">High</option>
-              <option [ngValue]="IssuePriority.Critical">Critical</option>
-            </select>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">Priority</span>
+              </label>
+              <select class="select select-bordered w-full" formControlName="priority">
+                <option [ngValue]="IssuePriority.Low">Low</option>
+                <option [ngValue]="IssuePriority.Medium">Medium</option>
+                <option [ngValue]="IssuePriority.High">High</option>
+                <option [ngValue]="IssuePriority.Critical">Critical</option>
+              </select>
+            </div>
+
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">Assignees</span>
+              </label>
+              <div class="flex flex-wrap gap-2 p-2 border border-base-300 rounded-lg min-h-[2.5rem]">
+                <div 
+                  *ngFor="let member of project?.members" 
+                  class="flex items-center gap-2">
+                  <label class="label cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      class="checkbox checkbox-sm"
+                      [value]="member.user.id"
+                      (change)="onAssigneeChange($event, member.user.id)">
+                    <span class="label-text ml-2">{{ member.user.fullName }}</span>
+                  </label>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="modal-action">
@@ -316,15 +366,16 @@ export class KanbanBoardComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private projectService: ProjectService,
     private issueService: IssueService,
+    private projectService: ProjectService,
     private fb: FormBuilder
   ) {
     this.createIssueForm = this.fb.group({
       title: ['', [Validators.required, Validators.maxLength(200)]],
       description: ['', [Validators.maxLength(2000)]],
       type: [IssueType.Task],
-      priority: [IssuePriority.Medium]
+      priority: [IssuePriority.Medium],
+      assigneeIds: [[]]
     });
   }
 
@@ -351,7 +402,10 @@ export class KanbanBoardComponent implements OnInit {
     this.isLoading = true;
     this.issueService.getProjectIssues(this.projectId).subscribe({
       next: (issues) => {
-        this.organizeIssues(issues);
+        this.todoIssues = issues.filter(i => i.status === IssueStatus.Todo);
+        this.inProgressIssues = issues.filter(i => i.status === IssueStatus.InProgress);
+        this.inReviewIssues = issues.filter(i => i.status === IssueStatus.InReview);
+        this.doneIssues = issues.filter(i => i.status === IssueStatus.Done);
         this.isLoading = false;
       },
       error: (error) => {
@@ -361,20 +415,10 @@ export class KanbanBoardComponent implements OnInit {
     });
   }
 
-  organizeIssues(issues: Issue[]) {
-    this.todoIssues = issues.filter(issue => issue.status === IssueStatus.Todo);
-    this.inProgressIssues = issues.filter(issue => issue.status === IssueStatus.InProgress);
-    this.inReviewIssues = issues.filter(issue => issue.status === IssueStatus.InReview);
-    this.doneIssues = issues.filter(issue => issue.status === IssueStatus.Done);
-  }
-
-  drop(event: CdkDragDrop<Issue[]>) {
+  onDrop(event: CdkDragDrop<Issue[]>) {
     if (event.previousContainer === event.container) {
       moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
     } else {
-      const issue = event.previousContainer.data[event.previousIndex];
-      const newStatus = this.getStatusFromContainer(event.container.id);
-      
       transferArrayItem(
         event.previousContainer.data,
         event.container.data,
@@ -383,7 +427,7 @@ export class KanbanBoardComponent implements OnInit {
       );
 
       // Update issue status
-      this.updateIssueStatus(issue, newStatus);
+      this.updateIssueStatus(event.container.data[event.currentIndex], this.getStatusFromContainer(event.container.id));
     }
   }
 
@@ -420,10 +464,11 @@ export class KanbanBoardComponent implements OnInit {
     if (this.createIssueForm.valid) {
       this.isCreatingIssue = true;
       
+      const formValue = this.createIssueForm.value;
       const request: CreateIssueRequest = {
-        ...this.createIssueForm.value,
+        ...formValue,
         projectId: this.projectId,
-        assigneeIds: []
+        assigneeIds: formValue.assigneeIds || []
       };
       
       this.issueService.createIssue(request).subscribe({
@@ -431,7 +476,8 @@ export class KanbanBoardComponent implements OnInit {
           this.todoIssues.unshift(issue);
           this.createIssueForm.reset({
             type: IssueType.Task,
-            priority: IssuePriority.Medium
+            priority: IssuePriority.Medium,
+            assigneeIds: []
           });
           this.isCreatingIssue = false;
           (document.getElementById('create_issue_modal') as any)?.close();
@@ -476,6 +522,37 @@ export class KanbanBoardComponent implements OnInit {
       case IssueType.Feature: return 'Feature';
       case IssueType.Epic: return 'Epic';
       default: return 'Task';
+    }
+  }
+
+  openCreateModal() {
+    this.createIssueForm.reset({
+      type: IssueType.Task,
+      priority: IssuePriority.Medium,
+      assigneeIds: []
+    });
+    
+    // Reset checkboxes
+    setTimeout(() => {
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]') as NodeListOf<HTMLInputElement>;
+      checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+      });
+    }, 100);
+    
+    (document.getElementById('create_issue_modal') as any)?.showModal();
+  }
+
+  onAssigneeChange(event: Event, assigneeId: number) {
+    const checkbox = event.target as HTMLInputElement;
+    const assigneeIds = this.createIssueForm.get('assigneeIds')?.value || [];
+
+    if (checkbox.checked) {
+      if (!assigneeIds.includes(assigneeId)) {
+        this.createIssueForm.get('assigneeIds')?.setValue([...assigneeIds, assigneeId]);
+      }
+    } else {
+      this.createIssueForm.get('assigneeIds')?.setValue(assigneeIds.filter((id: number) => id !== assigneeId));
     }
   }
 }

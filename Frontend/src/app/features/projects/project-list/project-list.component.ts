@@ -10,7 +10,7 @@ import { Project, CreateProjectRequest } from '../../../core/models';
   standalone: true,
   imports: [CommonModule, RouterModule, ReactiveFormsModule],
   template: `
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex justify-between items-center mb-6 pl-6 pr-6">
       <h1 class="text-3xl font-bold">Projects</h1>
       <button class="btn btn-outline btn-sm" onclick="create_project_modal.showModal()">
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -52,7 +52,7 @@ import { Project, CreateProjectRequest } from '../../../core/models';
       <div class="text-6xl mb-4">📋</div>
       <h3 class="text-xl font-semibold mb-2">No projects yet</h3>
       <p class="text-base-content/70 mb-4">Create your first project to get started</p>
-      <button class="btn btn-primary" onclick="create_project_modal.showModal()">
+      <button class="btn btn-outline btn-sm" onclick="create_project_modal.showModal()">
         Create Project
       </button>
     </div>
@@ -104,10 +104,10 @@ import { Project, CreateProjectRequest } from '../../../core/models';
           </div>
 
           <div class="modal-action">
-            <button type="button" class="btn" onclick="create_project_modal.close()">Cancel</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="create_project_modal.close()">Cancel</button>
             <button 
               type="submit" 
-              class="btn btn-primary"
+              clas="btn btn-outline btn-sm"
               [class.loading]="isCreating"
               [disabled]="createProjectForm.invalid || isCreating">
               <span *ngIf="!isCreating">Create Project</span>

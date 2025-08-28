@@ -56,7 +56,7 @@ import { LoginRequest } from '../../../core/models';
             <div class="card-actions justify-end">
               <button 
                 type="submit" 
-                class="btn btn-primary w-full"
+                class="btn btn-outline btn-sm w-full"
                 [class.loading]="isLoading"
                 [disabled]="loginForm.invalid || isLoading">
                 <span *ngIf="!isLoading">Login</span>
