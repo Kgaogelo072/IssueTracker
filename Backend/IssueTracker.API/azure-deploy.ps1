@@ -84,12 +84,13 @@ Compress-Archive -Path "./publish/*" -DestinationPath "./publish.zip"
 
 # --- Deploy Package ----------------------------------------------------------
 
-Write-Host "Deploying to Azure App Service (zip deploy)..." -ForegroundColor Yellow
-az webapp deployment source config-zip `
+Write-Host "Deploying to Azure App Service..." -ForegroundColor Yellow
+az webapp deploy `
     --resource-group $ResourceGroupName `
     --name $AppServiceName `
-    --src "./publish.zip" | Out-Null
-if ($LASTEXITCODE -ne 0) { Fail "Zip deploy failed." }
+    --src-path "./publish.zip" `
+    --type zip | Out-Null
+if ($LASTEXITCODE -ne 0) { Fail "Deployment failed." }
 
 # --- Connection String -------------------------------------------------------
 
