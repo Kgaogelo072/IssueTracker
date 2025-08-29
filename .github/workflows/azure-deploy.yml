@@ -69,7 +69,7 @@ jobs:
   deploy-api:
     needs: [build-and-test-api]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master'
     environment: production
     
     steps:
@@ -123,7 +123,7 @@ jobs:
   deploy-frontend:
     needs: [build-and-test-frontend]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master'
     environment: production
     
     steps:
@@ -166,13 +166,13 @@ jobs:
         azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         app_location: "Frontend"
-        output_location: "dist/issuetracker-frontend"
+        output_location: "dist/issue-tracker-frontend"
         skip_app_build: true
 
   notify-deployment:
     needs: [deploy-api, deploy-frontend]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master'
     
     steps:
     - name: Deployment Summary
