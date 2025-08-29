@@ -115,9 +115,9 @@ jobs:
           --resource-group ${{ env.RESOURCE_GROUP }} \
           --name ${{ env.API_APP_NAME }} \
           --settings \
-            "Jwt:SecretKey=${{ secrets.JWT_SECRET_KEY }}" \
-            "Jwt:Issuer=https://${{ env.API_APP_NAME }}.azurewebsites.net" \
-            "Jwt:Audience=https://lemon-ground-090e65b10.1.azurestaticapps.net" \
+            "Jwt__SecretKey=${{ secrets.JWT_SECRET_KEY }}" \
+            "Jwt__Issuer=https://${{ env.API_APP_NAME }}.azurewebsites.net" \
+            "Jwt__Audience=https://lemon-ground-090e65b10.1.azurestaticapps.net" \
             "ASPNETCORE_ENVIRONMENT=Production"
 
   deploy-frontend:
@@ -167,7 +167,7 @@ jobs:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         app_location: "Frontend"
         output_location: "dist/issue-tracker-frontend"
-        skip_app_build: true
+        skip_app_build: false
 
   notify-deployment:
     needs: [deploy-api, deploy-frontend]
