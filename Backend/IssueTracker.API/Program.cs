@@ -20,7 +20,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAngularApp", policy =>
     {
         policy.WithOrigins(
-                "https://issuetracker-frontend.azurestaticapps.net",
+                "https://lemon-ground-090e65b10.1.azurestaticapps.net",
                 "https://localhost:4200" // for local development
               )
               .AllowAnyHeader()
