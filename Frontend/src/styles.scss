@@ -7,6 +7,7 @@ body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* Enhanced kanban styling */
 .kanban-column {
   min-height: 500px;
 }
@@ -20,9 +21,10 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+/* Drag and drop styling */
 .cdk-drag-preview {
   box-sizing: border-box;
-  border-radius: 4px;
+  border-radius: 0.75rem;
   box-shadow: 0 5px 5px -3px rgba(0, 0, 0, 0.2),
               0 8px 10px 1px rgba(0, 0, 0, 0.14),
               0 3px 14px 2px rgba(0, 0, 0, 0.12);
@@ -38,4 +40,68 @@ body {
 
 .cdk-drop-list-dragging .cdk-drag:not(.cdk-drag-placeholder) {
   transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* Enhanced form styling */
+.input, .textarea, .select {
+  @apply bg-base-200 border-base-300 text-base-content;
+}
+
+.input:focus, .textarea:focus, .select:focus {
+  @apply border-primary ring-1 ring-primary;
+}
+
+/* Enhanced button styling */
+.btn {
+  @apply transition-all duration-200;
+}
+
+.btn:hover {
+  @apply transform scale-105;
+}
+
+.btn:active {
+  @apply transform scale-95;
+}
+
+/* Enhanced badge styling */
+.badge {
+  @apply font-medium;
+}
+
+/* Enhanced modal styling */
+.modal-box {
+  @apply shadow-2xl;
+}
+
+/* Enhanced tooltip styling */
+.tooltip {
+  @apply z-50;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Enhanced focus states */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  @apply ring-2 ring-primary ring-offset-2 ring-offset-base-100;
 }

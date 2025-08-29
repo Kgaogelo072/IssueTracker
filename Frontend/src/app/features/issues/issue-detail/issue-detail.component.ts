@@ -12,53 +12,59 @@ import { Issue, Comment, CreateCommentRequest, UpdateIssueRequest, IssueStatus, 
   standalone: true,
   imports: [CommonModule, RouterModule, ReactiveFormsModule],
   template: `
-    <div *ngIf="issue" class="max-w-4xl mx-auto space-y-6">
+    <div *ngIf="issue" class="max-w-4xl mx-auto space-y-8">
       <!-- Issue Header -->
-      <div class="card bg-base-100 shadow-xl">
-        <div class="card-body">
-          <div class="flex justify-between items-start mb-4">
+      <div class="card bg-base-100 shadow-xl border border-base-300">
+        <div class="card-body p-8">
+          <div class="flex justify-between items-start mb-6">
             <div class="flex-1">
-              <div class="flex items-center gap-2 mb-2">
-                <div class="badge badge-outline">{{ getTypeText(issue.type) }}</div>
-                <div class="badge" [ngClass]="getPriorityClass(issue.priority)">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="badge badge-outline badge-lg">{{ getTypeText(issue.type) }}</div>
+                <div class="badge badge-lg" [ngClass]="getPriorityClass(issue.priority)">
                   {{ getPriorityText(issue.priority) }}
                 </div>
-                <div class="badge" [ngClass]="getStatusClass(issue.status)">
+                <div class="badge badge-lg" [ngClass]="getStatusClass(issue.status)">
                   {{ getStatusText(issue.status) }}
                 </div>
               </div>
-              <h1 class="text-2xl font-bold">{{ issue.title }}</h1>
-              <p class="text-base-content/70 mt-2">{{ issue.description }}</p>
+              <h1 class="text-3xl font-bold text-base-content mb-4">{{ issue.title }}</h1>
+              <p class="text-base-content/70 text-lg leading-relaxed">{{ issue.description }}</p>
             </div>
-            <div class="flex gap-2">
-              <button class="btn btn-outline btn-sm" (click)="openEditModal()">
+            <div class="flex gap-3">
+              <button class="btn btn-outline btn-lg" (click)="openEditModal()">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
                 Edit Issue
               </button>
-              <button class="btn btn-outline btn-sm" [routerLink]="['/projects', issue.projectId, 'kanban']">
+              <button class="btn btn-outline btn-lg" [routerLink]="['/projects', issue.projectId, 'kanban']">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
                 Back to Board
               </button>
             </div>
           </div>
 
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-4">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pt-6 border-t border-base-300">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-4">
               <div class="flex items-center gap-2">
-                <span class="text-sm text-base-content/70">Created by:</span>
-                <span class="text-sm">{{ issue.creator.fullName }}</span>
+                <span class="text-sm font-medium text-base-content/70">Created by:</span>
+                <span class="text-sm font-semibold text-base-content">{{ issue.creator.fullName }}</span>
               </div>
-              <div class="text-sm text-base-content/70">
+              <div class="text-sm text-base-content/60">
                 {{ issue.createdAt | date:'medium' }}
               </div>
             </div>
             
-            <div class="flex items-center gap-2" *ngIf="issue.assignees.length > 0">
-              <span class="text-sm text-base-content/70">Assigned to:</span>
-              <div class="flex -space-x-1">
+            <div class="flex items-center gap-3" *ngIf="issue.assignees.length > 0">
+              <span class="text-sm font-medium text-base-content/70">Assigned to:</span>
+              <div class="flex -space-x-2">
                 <div 
                   *ngFor="let assignee of issue.assignees" 
                   class="avatar tooltip"
                   [attr.data-tip]="assignee.fullName">
-                  <div class="w-8 h-8 rounded-full bg-primary text-primary-content text-sm flex items-center justify-center">
+                  <div class="w-10 h-10 rounded-full bg-primary text-primary-content text-sm flex items-center justify-center font-semibold border-2 border-base-100">
                     {{ assignee.firstName.charAt(0) }}{{ assignee.lastName.charAt(0) }}
                   </div>
                 </div>
@@ -69,53 +75,59 @@ import { Issue, Comment, CreateCommentRequest, UpdateIssueRequest, IssueStatus, 
       </div>
 
       <!-- Comments Section -->
-      <div class="card bg-base-100 shadow-xl">
-        <div class="card-body">
-          <h2 class="card-title mb-4">Comments ({{ issue.comments.length }})</h2>
+      <div class="card bg-base-100 shadow-xl border border-base-300">
+        <div class="card-body p-8">
+          <h2 class="card-title text-2xl mb-6">Comments ({{ issue.comments.length }})</h2>
           
           <!-- Add Comment Form -->
-          <form [formGroup]="commentForm" (ngSubmit)="onAddComment()" class="mb-6">
+          <form [formGroup]="commentForm" (ngSubmit)="onAddComment()" class="mb-8">
             <div class="form-control w-full mb-4">
               <textarea 
                 placeholder="Add a comment..." 
-                class="textarea textarea-bordered w-full"
+                class="textarea textarea-bordered w-full text-base-content bg-base-200 border-base-300"
                 formControlName="content"
-                rows="3"></textarea>
+                rows="4"></textarea>
             </div>
             <div class="flex justify-end">
               <button 
                 type="submit" 
-                class="btn btn-outline btn-sm"
+                class="btn btn-primary"
                 [disabled]="commentForm.invalid || isAddingComment">
                 <span *ngIf="!isAddingComment">Add Comment</span>
-                <span *ngIf="isAddingComment">Adding...</span>
+                <span *ngIf="isAddingComment" class="loading loading-spinner loading-sm"></span>
               </button>
             </div>
           </form>
 
           <!-- Comments List -->
-          <div class="space-y-4" *ngIf="issue.comments.length > 0">
+          <div class="space-y-6" *ngIf="issue.comments.length > 0">
             <div 
               *ngFor="let comment of issue.comments" 
-              class="border border-base-300 rounded-lg p-4">
-              <div class="flex justify-between items-start mb-2">
-                <div class="flex items-center gap-2">
-                    <div class="font-medium text-sm">{{ comment.author.fullName }}</div>
-                    <div class="text-xs text-base-content/70">{{ comment.createdAt | date:'medium' }}</div>
+              class="border border-base-300 rounded-xl p-6 bg-base-200">
+              <div class="flex justify-between items-start mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="font-semibold text-base-content">{{ comment.author.fullName }}</div>
+                    <div class="text-sm text-base-content/60">{{ comment.createdAt | date:'medium' }}</div>
                 </div>
                 <button 
-                  class="btn btn-ghost btn-xs text-error"
+                  class="btn btn-ghost btn-sm text-error hover:bg-error hover:text-error-content"
                   (click)="deleteComment(comment.id)"
                   *ngIf="comment.author.id === currentUser?.id">
-                  Delete
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                  </svg>
                 </button>
               </div>
-              <p class="text-sm whitespace-pre-wrap">{{ comment.content }}</p>
+              <p class="text-base-content leading-relaxed whitespace-pre-wrap">{{ comment.content }}</p>
             </div>
           </div>
 
-          <div *ngIf="issue.comments.length === 0" class="text-center py-8 text-base-content/70">
-            No comments yet. Be the first to comment!
+          <div *ngIf="issue.comments.length === 0" class="text-center py-12 text-base-content/60">
+            <svg class="w-16 h-16 mx-auto mb-4 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+            </svg>
+            <p class="text-lg font-medium">No comments yet</p>
+            <p class="text-sm">Be the first to comment!</p>
           </div>
         </div>
       </div>
@@ -127,11 +139,11 @@ import { Issue, Comment, CreateCommentRequest, UpdateIssueRequest, IssueStatus, 
 
     <!-- Edit Issue Modal -->
     <dialog id="edit_issue_modal" class="modal">
-      <div class="modal-box w-11/12 max-w-2xl">
+      <div class="modal-box w-11/12 max-w-2xl bg-base-100 border border-base-300">
         <form method="dialog">
           <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
         </form>
-        <h3 class="font-bold text-lg mb-4">Edit Issue</h3>
+        <h3 class="font-bold text-2xl mb-6 text-base-content">Edit Issue</h3>
         
         <form [formGroup]="editIssueForm" (ngSubmit)="onUpdateIssue()">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -197,32 +209,33 @@ import { Issue, Comment, CreateCommentRequest, UpdateIssueRequest, IssueStatus, 
 
             <div class="form-control w-full">
               <label class="label">
-                <span class="label-text">Assignees</span>
+                <span class="label-text font-semibold">Assignees</span>
               </label>
-              <div class="flex flex-wrap gap-2 p-2 border border-base-300 rounded-lg min-h-[2.5rem]">
+              <div class="flex flex-wrap gap-3 p-4 border border-base-300 rounded-lg min-h-[3rem] bg-base-200">
                 <div 
                   *ngFor="let member of projectMembers" 
-                  class="flex items-center gap-2">
-                  <label class="label cursor-pointer">
+                  class="flex items-center">
+                  <label class="label cursor-pointer hover:bg-base-300 p-2 rounded-lg transition-colors">
                     <input 
                       type="checkbox" 
-                      class="checkbox checkbox-sm"
+                      class="checkbox checkbox-sm checkbox-primary"
                       [value]="member.user.id"
                       (change)="onEditAssigneeChange($event, member.user.id)">
-                    <span class="label-text ml-2">{{ member.user.fullName }}</span>
+                    <span class="label-text ml-3 text-base-content">{{ member.user.fullName }}</span>
                   </label>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="modal-action">
-            <button type="button" class="btn btn-outline btn-sm" onclick="edit_issue_modal.close()">Cancel</button>
+          <div class="modal-action gap-3">
+            <button type="button" class="btn btn-outline" onclick="edit_issue_modal.close()">Cancel</button>
             <button 
               type="submit" 
-              class="btn btn-outline btn-sm"
+              class="btn btn-primary"
               [disabled]="editIssueForm.invalid || isUpdatingIssue">
-              Update Issue
+              <span *ngIf="!isUpdatingIssue">Update Issue</span>
+              <span *ngIf="isUpdatingIssue" class="loading loading-spinner loading-sm"></span>
             </button>
           </div>
         </form>

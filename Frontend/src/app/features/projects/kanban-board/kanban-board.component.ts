@@ -12,24 +12,30 @@ import { Issue, Project, CreateIssueRequest, UpdateIssueRequest, IssueStatus, Is
   standalone: true,
   imports: [CommonModule, RouterModule, ReactiveFormsModule, CdkDropListGroup, CdkDropList, CdkDrag],
   template: `
-    <div *ngIf="project" class="max-w-7xl mx-auto space-y-6">
+    <div *ngIf="project" class="max-w-7xl mx-auto space-y-8">
       <!-- Project Header -->
-      <div class="flex justify-between items-center">
-        <div>
-          <h1 class="text-3xl font-bold">{{ project.name }}</h1>
-          <p class="text-base-content/70 mt-1">{{ project.description }}</p>
+      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+        <div class="flex-1">
+          <h1 class="text-4xl font-bold text-base-content mb-2">{{ project.name }}</h1>
+          <p class="text-base-content/70 text-lg">{{ project.description }}</p>
         </div>
-        <button class="btn btn-outline btn-sm" (click)="openCreateModal()">
-          Create Issue
-        </button>
+        <div class="flex-shrink-0">
+          <button class="btn btn-outline btn-lg" (click)="openCreateModal()">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            Create Issue
+          </button>
+        </div>
       </div>
 
       <!-- Kanban Board -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- Todo Column -->
-        <div class="bg-base-200 rounded-lg p-4">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="font-semibold">Todo ({{ todoIssues.length }})</h3>
+        <div class="bg-base-200 rounded-xl border border-base-300 p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-semibold text-base-content">Todo</h3>
+            <span class="badge badge-neutral badge-lg">{{ todoIssues.length }}</span>
           </div>
           <div 
             cdkDropList
@@ -37,41 +43,41 @@ import { Issue, Project, CreateIssueRequest, UpdateIssueRequest, IssueStatus, Is
             [cdkDropListData]="todoIssues"
             [cdkDropListConnectedTo]="connectedLists"
             (cdkDropListDropped)="onDrop($event)"
-            class="space-y-3 min-h-[200px]">
+            class="space-y-4 min-h-[400px]">
             <div 
               *ngFor="let issue of todoIssues" 
               cdkDrag
-              class="card bg-base-100 shadow-sm cursor-move">
+              class="card bg-base-100 shadow-lg border border-base-300 cursor-move hover:shadow-xl transition-all duration-200">
               <div class="card-body p-4">
-                <div class="flex justify-between items-start mb-2">
+                <div class="flex justify-between items-start mb-3">
                   <div class="flex items-center gap-2">
-                    <div class="badge badge-outline badge-xs">{{ getTypeText(issue.type) }}</div>
-                    <div class="badge badge-xs" [ngClass]="getPriorityClass(issue.priority)">
+                    <div class="badge badge-outline badge-sm">{{ getTypeText(issue.type) }}</div>
+                    <div class="badge badge-sm" [ngClass]="getPriorityClass(issue.priority)">
                       {{ getPriorityText(issue.priority) }}
                     </div>
                   </div>
                 </div>
-                <h4 class="font-medium text-sm line-clamp-2 mb-2" (click)="openIssueDetail(issue)">
+                <h4 class="font-semibold text-base-content text-sm line-clamp-2 mb-3 cursor-pointer hover:text-primary transition-colors" (click)="openIssueDetail(issue)">
                   {{ issue.title }}
                 </h4>
                 <div class="flex items-center justify-between">
-                  <div class="flex -space-x-1" *ngIf="issue.assignees.length > 0">
+                  <div class="flex -space-x-2" *ngIf="issue.assignees.length > 0">
                     <div 
                       *ngFor="let assignee of issue.assignees.slice(0, 3)"
                       class="avatar tooltip"
                       [attr.data-tip]="assignee.fullName">
-                      <div class="w-6 h-6 rounded-full bg-primary text-primary-content text-xs flex items-center justify-center">
+                      <div class="w-7 h-7 rounded-full bg-primary text-primary-content text-xs flex items-center justify-center font-semibold border-2 border-base-100">
                         {{ assignee.firstName.charAt(0) }}{{ assignee.lastName.charAt(0) }}
                       </div>
                     </div>
                     <div 
                       *ngIf="issue.assignees.length > 3"
-                      class="w-6 h-6 rounded-full bg-base-300 text-base-content text-xs flex items-center justify-center">
+                      class="w-7 h-7 rounded-full bg-base-300 text-base-content text-xs flex items-center justify-center font-semibold border-2 border-base-100">
                       +{{ issue.assignees.length - 3 }}
                     </div>
                   </div>
-                  <div class="text-xs text-base-content/70">
-                    {{ issue.createdAt | date:'shortDate' }}
+                  <div class="text-xs text-base-content/60">
+                    {{ issue.createdAt | date:'MMM d' }}
                   </div>
                 </div>
               </div>
@@ -80,9 +86,10 @@ import { Issue, Project, CreateIssueRequest, UpdateIssueRequest, IssueStatus, Is
         </div>
 
         <!-- In Progress Column -->
-        <div class="bg-base-200 rounded-lg p-4">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="font-semibold">In Progress ({{ inProgressIssues.length }})</h3>
+        <div class="bg-base-200 rounded-xl border border-base-300 p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-semibold text-base-content">In Progress</h3>
+            <span class="badge badge-info badge-lg">{{ inProgressIssues.length }}</span>
           </div>
           <div 
             cdkDropList
@@ -90,41 +97,41 @@ import { Issue, Project, CreateIssueRequest, UpdateIssueRequest, IssueStatus, Is
             [cdkDropListData]="inProgressIssues"
             [cdkDropListConnectedTo]="connectedLists"
             (cdkDropListDropped)="onDrop($event)"
-            class="space-y-3 min-h-[200px]">
+            class="space-y-4 min-h-[400px]">
             <div 
               *ngFor="let issue of inProgressIssues" 
               cdkDrag
-              class="card bg-base-100 shadow-sm cursor-move">
+              class="card bg-base-100 shadow-lg border border-base-300 cursor-move hover:shadow-xl transition-all duration-200">
               <div class="card-body p-4">
-                <div class="flex justify-between items-start mb-2">
+                <div class="flex justify-between items-start mb-3">
                   <div class="flex items-center gap-2">
-                    <div class="badge badge-outline badge-xs">{{ getTypeText(issue.type) }}</div>
-                    <div class="badge badge-xs" [ngClass]="getPriorityClass(issue.priority)">
+                    <div class="badge badge-outline badge-sm">{{ getTypeText(issue.type) }}</div>
+                    <div class="badge badge-sm" [ngClass]="getPriorityClass(issue.priority)">
                       {{ getPriorityText(issue.priority) }}
                     </div>
                   </div>
                 </div>
-                <h4 class="font-medium text-sm line-clamp-2 mb-2" (click)="openIssueDetail(issue)">
+                <h4 class="font-semibold text-base-content text-sm line-clamp-2 mb-3 cursor-pointer hover:text-primary transition-colors" (click)="openIssueDetail(issue)">
                   {{ issue.title }}
                 </h4>
                 <div class="flex items-center justify-between">
-                  <div class="flex -space-x-1" *ngIf="issue.assignees.length > 0">
+                  <div class="flex -space-x-2" *ngIf="issue.assignees.length > 0">
                     <div 
                       *ngFor="let assignee of issue.assignees.slice(0, 3)"
                       class="avatar tooltip"
                       [attr.data-tip]="assignee.fullName">
-                      <div class="w-6 h-6 rounded-full bg-primary text-primary-content text-xs flex items-center justify-center">
+                      <div class="w-7 h-7 rounded-full bg-primary text-primary-content text-xs flex items-center justify-center font-semibold border-2 border-base-100">
                         {{ assignee.firstName.charAt(0) }}{{ assignee.lastName.charAt(0) }}
                       </div>
                     </div>
                     <div 
                       *ngIf="issue.assignees.length > 3"
-                      class="w-6 h-6 rounded-full bg-base-300 text-base-content text-xs flex items-center justify-center">
+                      class="w-7 h-7 rounded-full bg-base-300 text-base-content text-xs flex items-center justify-center font-semibold border-2 border-base-100">
                       +{{ issue.assignees.length - 3 }}
                     </div>
                   </div>
-                  <div class="text-xs text-base-content/70">
-                    {{ issue.createdAt | date:'shortDate' }}
+                  <div class="text-xs text-base-content/60">
+                    {{ issue.createdAt | date:'MMM d' }}
                   </div>
                 </div>
               </div>
@@ -133,9 +140,10 @@ import { Issue, Project, CreateIssueRequest, UpdateIssueRequest, IssueStatus, Is
         </div>
 
         <!-- In Review Column -->
-        <div class="bg-base-200 rounded-lg p-4">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="font-semibold">In Review ({{ inReviewIssues.length }})</h3>
+        <div class="bg-base-200 rounded-xl border border-base-300 p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-semibold text-base-content">In Review</h3>
+            <span class="badge badge-warning badge-lg">{{ inReviewIssues.length }}</span>
           </div>
           <div 
             cdkDropList
@@ -143,41 +151,41 @@ import { Issue, Project, CreateIssueRequest, UpdateIssueRequest, IssueStatus, Is
             [cdkDropListData]="inReviewIssues"
             [cdkDropListConnectedTo]="connectedLists"
             (cdkDropListDropped)="onDrop($event)"
-            class="space-y-3 min-h-[200px]">
+            class="space-y-4 min-h-[400px]">
             <div 
               *ngFor="let issue of inReviewIssues" 
               cdkDrag
-              class="card bg-base-100 shadow-sm cursor-move">
+              class="card bg-base-100 shadow-lg border border-base-300 cursor-move hover:shadow-xl transition-all duration-200">
               <div class="card-body p-4">
-                <div class="flex justify-between items-start mb-2">
+                <div class="flex justify-between items-start mb-3">
                   <div class="flex items-center gap-2">
-                    <div class="badge badge-outline badge-xs">{{ getTypeText(issue.type) }}</div>
-                    <div class="badge badge-xs" [ngClass]="getPriorityClass(issue.priority)">
+                    <div class="badge badge-outline badge-sm">{{ getTypeText(issue.type) }}</div>
+                    <div class="badge badge-sm" [ngClass]="getPriorityClass(issue.priority)">
                       {{ getPriorityText(issue.priority) }}
                     </div>
                   </div>
                 </div>
-                <h4 class="font-medium text-sm line-clamp-2 mb-2" (click)="openIssueDetail(issue)">
+                <h4 class="font-semibold text-base-content text-sm line-clamp-2 mb-3 cursor-pointer hover:text-primary transition-colors" (click)="openIssueDetail(issue)">
                   {{ issue.title }}
                 </h4>
                 <div class="flex items-center justify-between">
-                  <div class="flex -space-x-1" *ngIf="issue.assignees.length > 0">
+                  <div class="flex -space-x-2" *ngIf="issue.assignees.length > 0">
                     <div 
                       *ngFor="let assignee of issue.assignees.slice(0, 3)"
                       class="avatar tooltip"
                       [attr.data-tip]="assignee.fullName">
-                      <div class="w-6 h-6 rounded-full bg-primary text-primary-content text-xs flex items-center justify-center">
+                      <div class="w-7 h-7 rounded-full bg-primary text-primary-content text-xs flex items-center justify-center font-semibold border-2 border-base-100">
                         {{ assignee.firstName.charAt(0) }}{{ assignee.lastName.charAt(0) }}
                       </div>
                     </div>
                     <div 
                       *ngIf="issue.assignees.length > 3"
-                      class="w-6 h-6 rounded-full bg-base-300 text-base-content text-xs flex items-center justify-center">
+                      class="w-7 h-7 rounded-full bg-base-300 text-base-content text-xs flex items-center justify-center font-semibold border-2 border-base-100">
                       +{{ issue.assignees.length - 3 }}
                     </div>
                   </div>
-                  <div class="text-xs text-base-content/70">
-                    {{ issue.createdAt | date:'shortDate' }}
+                  <div class="text-xs text-base-content/60">
+                    {{ issue.createdAt | date:'MMM d' }}
                   </div>
                 </div>
               </div>
@@ -186,9 +194,10 @@ import { Issue, Project, CreateIssueRequest, UpdateIssueRequest, IssueStatus, Is
         </div>
 
         <!-- Done Column -->
-        <div class="bg-base-200 rounded-lg p-4">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="font-semibold">Done ({{ doneIssues.length }})</h3>
+        <div class="bg-base-200 rounded-xl border border-base-300 p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-semibold text-base-content">Done</h3>
+            <span class="badge badge-success badge-lg">{{ doneIssues.length }}</span>
           </div>
           <div 
             cdkDropList
@@ -196,41 +205,41 @@ import { Issue, Project, CreateIssueRequest, UpdateIssueRequest, IssueStatus, Is
             [cdkDropListData]="doneIssues"
             [cdkDropListConnectedTo]="connectedLists"
             (cdkDropListDropped)="onDrop($event)"
-            class="space-y-3 min-h-[200px]">
+            class="space-y-4 min-h-[400px]">
             <div 
               *ngFor="let issue of doneIssues" 
               cdkDrag
-              class="card bg-base-100 shadow-sm cursor-move">
+              class="card bg-base-100 shadow-lg border border-base-300 cursor-move hover:shadow-xl transition-all duration-200">
               <div class="card-body p-4">
-                <div class="flex justify-between items-start mb-2">
+                <div class="flex justify-between items-start mb-3">
                   <div class="flex items-center gap-2">
-                    <div class="badge badge-outline badge-xs">{{ getTypeText(issue.type) }}</div>
-                    <div class="badge badge-xs" [ngClass]="getPriorityClass(issue.priority)">
+                    <div class="badge badge-outline badge-sm">{{ getTypeText(issue.type) }}</div>
+                    <div class="badge badge-sm" [ngClass]="getPriorityClass(issue.priority)">
                       {{ getPriorityText(issue.priority) }}
                     </div>
                   </div>
                 </div>
-                <h4 class="font-medium text-sm line-clamp-2 mb-2" (click)="openIssueDetail(issue)">
+                <h4 class="font-semibold text-base-content text-sm line-clamp-2 mb-3 cursor-pointer hover:text-primary transition-colors" (click)="openIssueDetail(issue)">
                   {{ issue.title }}
                 </h4>
                 <div class="flex items-center justify-between">
-                  <div class="flex -space-x-1" *ngIf="issue.assignees.length > 0">
+                  <div class="flex -space-x-2" *ngIf="issue.assignees.length > 0">
                     <div 
                       *ngFor="let assignee of issue.assignees.slice(0, 3)"
                       class="avatar tooltip"
                       [attr.data-tip]="assignee.fullName">
-                      <div class="w-6 h-6 rounded-full bg-primary text-primary-content text-xs flex items-center justify-center">
+                      <div class="w-7 h-7 rounded-full bg-primary text-primary-content text-xs flex items-center justify-center font-semibold border-2 border-base-100">
                         {{ assignee.firstName.charAt(0) }}{{ assignee.lastName.charAt(0) }}
                       </div>
                     </div>
                     <div 
                       *ngIf="issue.assignees.length > 3"
-                      class="w-6 h-6 rounded-full bg-base-300 text-base-content text-xs flex items-center justify-center">
+                      class="w-7 h-7 rounded-full bg-base-300 text-base-content text-xs flex items-center justify-center font-semibold border-2 border-base-100">
                       +{{ issue.assignees.length - 3 }}
                     </div>
                   </div>
-                  <div class="text-xs text-base-content/70">
-                    {{ issue.createdAt | date:'shortDate' }}
+                  <div class="text-xs text-base-content/60">
+                    {{ issue.createdAt | date:'MMM d' }}
                   </div>
                 </div>
               </div>
@@ -242,11 +251,11 @@ import { Issue, Project, CreateIssueRequest, UpdateIssueRequest, IssueStatus, Is
 
     <!-- Create Issue Modal -->
     <dialog id="create_issue_modal" class="modal">
-      <div class="modal-box w-11/12 max-w-2xl">
+      <div class="modal-box w-11/12 max-w-2xl bg-base-100 border border-base-300">
         <form method="dialog">
           <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
         </form>
-        <h3 class="font-bold text-lg mb-4">Create New Issue</h3>
+        <h3 class="font-bold text-2xl mb-6 text-base-content">Create New Issue</h3>
         
         <form [formGroup]="createIssueForm" (ngSubmit)="onCreateIssue()">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -300,32 +309,33 @@ import { Issue, Project, CreateIssueRequest, UpdateIssueRequest, IssueStatus, Is
 
             <div class="form-control w-full">
               <label class="label">
-                <span class="label-text">Assignees</span>
+                <span class="label-text font-semibold">Assignees</span>
               </label>
-              <div class="flex flex-wrap gap-2 p-2 border border-base-300 rounded-lg min-h-[2.5rem]">
+              <div class="flex flex-wrap gap-3 p-4 border border-base-300 rounded-lg min-h-[3rem] bg-base-200">
                 <div 
                   *ngFor="let member of project?.members" 
-                  class="flex items-center gap-2">
-                  <label class="label cursor-pointer">
+                  class="flex items-center">
+                  <label class="label cursor-pointer hover:bg-base-300 p-2 rounded-lg transition-colors">
                     <input 
                       type="checkbox" 
-                      class="checkbox checkbox-sm"
+                      class="checkbox checkbox-sm checkbox-primary"
                       [value]="member.user.id"
                       (change)="onAssigneeChange($event, member.user.id)">
-                    <span class="label-text ml-2">{{ member.user.fullName }}</span>
+                    <span class="label-text ml-3 text-base-content">{{ member.user.fullName }}</span>
                   </label>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="modal-action">
-            <button type="button" class="btn btn-outline btn-sm" onclick="create_issue_modal.close()">Cancel</button>
+          <div class="modal-action gap-3">
+            <button type="button" class="btn btn-outline" onclick="create_issue_modal.close()">Cancel</button>
             <button 
               type="submit" 
-              class="btn btn-outline btn-sm"
+              class="btn btn-primary"
               [disabled]="createIssueForm.invalid || isCreatingIssue">
-              Create Issue
+              <span *ngIf="!isCreatingIssue">Create Issue</span>
+              <span *ngIf="isCreatingIssue" class="loading loading-spinner loading-sm"></span>
             </button>
           </div>
         </form>
