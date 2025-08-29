@@ -32,7 +32,7 @@ import { Issue, Project, CreateIssueRequest, UpdateIssueRequest, IssueStatus, Is
       <!-- Kanban Board -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- Todo Column -->
-        <div class="bg-base-200 rounded-xl border border-base-300 p-6">
+        <div class="bg-base-100 rounded-xl border border-base-300 p-6">
           <div class="flex justify-between items-center mb-6">
             <h3 class="text-xl font-semibold text-base-content">Todo</h3>
             <span class="badge badge-neutral badge-lg">{{ todoIssues.length }}</span>
@@ -86,7 +86,7 @@ import { Issue, Project, CreateIssueRequest, UpdateIssueRequest, IssueStatus, Is
         </div>
 
         <!-- In Progress Column -->
-        <div class="bg-base-200 rounded-xl border border-base-300 p-6">
+        <div class="bg-base-100 rounded-xl border border-base-300 p-6">
           <div class="flex justify-between items-center mb-6">
             <h3 class="text-xl font-semibold text-base-content">In Progress</h3>
             <span class="badge badge-info badge-lg">{{ inProgressIssues.length }}</span>
@@ -140,7 +140,7 @@ import { Issue, Project, CreateIssueRequest, UpdateIssueRequest, IssueStatus, Is
         </div>
 
         <!-- In Review Column -->
-        <div class="bg-base-200 rounded-xl border border-base-300 p-6">
+        <div class="bg-base-100 rounded-xl border border-base-300 p-6">
           <div class="flex justify-between items-center mb-6">
             <h3 class="text-xl font-semibold text-base-content">In Review</h3>
             <span class="badge badge-warning badge-lg">{{ inReviewIssues.length }}</span>
@@ -194,7 +194,7 @@ import { Issue, Project, CreateIssueRequest, UpdateIssueRequest, IssueStatus, Is
         </div>
 
         <!-- Done Column -->
-        <div class="bg-base-200 rounded-xl border border-base-300 p-6">
+        <div class="bg-base-100 rounded-xl border border-base-300 p-6">
           <div class="flex justify-between items-center mb-6">
             <h3 class="text-xl font-semibold text-base-content">Done</h3>
             <span class="badge badge-success badge-lg">{{ doneIssues.length }}</span>

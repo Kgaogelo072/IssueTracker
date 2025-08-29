@@ -10,8 +10,8 @@ import { LoginRequest } from '../../../core/models';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule],
   template: `
-    <div class="min-h-screen flex items-center justify-center bg-base-200">
-      <div class="card w-96 bg-base-100 shadow-xl">
+    <div class="min-h-screen flex items-center justify-center">
+      <div class="card w-96 border border-base-300 bg-base-100 shadow-xl">
         <div class="card-body">
           <h2 class="card-title justify-center text-2xl mb-6">Login to Issue Tracker</h2>
           

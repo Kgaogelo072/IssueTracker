@@ -21,7 +21,7 @@ import { Project, CreateProjectRequest } from '../../../core/models';
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" *ngIf="projects.length > 0">
-      <div *ngFor="let project of projects" class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+      <div *ngFor="let project of projects" class="card bg-base-100 border border-base-300 shadow-xl hover:shadow-2xl transition-shadow">
         <div class="card-body">
           <h2 class="card-title">{{ project.name }}</h2>
           <p class="text-base-content/70">{{ project.description || 'No description' }}</p>

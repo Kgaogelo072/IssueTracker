@@ -186,7 +186,7 @@ import { Project, ProjectRole, AddMemberRequest, UpdateProjectRequest } from '..
 
     <!-- Add Member Modal -->
     <dialog id="add_member_modal" class="modal">
-      <div class="modal-box max-w-2xl">
+      <div class="modal-box border border-base-300 max-w-2xl">
         <div class="flex items-center gap-3 mb-6">
           <div class="p-2 bg-primary/10 rounded-lg">
             <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
