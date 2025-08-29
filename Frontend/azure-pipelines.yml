@@ -1,0 +1,67 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  buildConfiguration: 'Release'
+
+stages:
+- stage: Build
+  displayName: 'Build Angular Application'
+  jobs:
+  - job: Build
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '18.x'
+      displayName: 'Install Node.js'
+
+    - script: |
+        npm install -g @angular/cli
+      displayName: 'Install Angular CLI'
+
+    - script: |
+        npm install
+      displayName: 'Install dependencies'
+      workingDirectory: '$(System.DefaultWorkingDirectory)'
+
+    - script: |
+        ng build --configuration production
+      displayName: 'Build Angular application'
+      workingDirectory: '$(System.DefaultWorkingDirectory)'
+
+    - task: ArchiveFiles@2
+      displayName: 'Archive Angular build'
+      inputs:
+        rootFolderOrFile: '$(System.DefaultWorkingDirectory)/dist'
+        includeRootFolder: false
+        archiveType: 'zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+        replaceExistingArchive: true
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Angular Artifacts'
+      inputs:
+        pathToPublish: '$(Build.ArtifactStagingDirectory)'
+        artifactName: 'angular-drop'
+
+- stage: Deploy
+  displayName: 'Deploy to Azure Static Web Apps'
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - deployment: Deploy
+    environment: 'production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureStaticWebApp@0
+            inputs:
+              app_location: '/dist'
+              api_location: ''
+              output_location: ''
+              skip_app_build: true
+              package_location: '$(Pipeline.Workspace)/angular-drop/$(Build.BuildId).zip' 
