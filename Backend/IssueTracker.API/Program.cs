@@ -3,60 +3,85 @@ using IssueTracker.API.Data;
 using IssueTracker.API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Controllers
 builder.Services.AddControllers();
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+// Swagger + JWT auth in Swagger
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "IssueTracker API", Version = "v1" });
+    var securityScheme = new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Description = "Enter 'Bearer {token}'",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+    };
+    c.AddSecurityDefinition("Bearer", securityScheme);
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        { securityScheme, Array.Empty<string>() }
+    });
+});
 
-// Add CORS
+// CORS (must be specific when using AllowCredentials)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngularApp", policy =>
     {
-        policy.WithOrigins(
+        policy
+            .WithOrigins(
                 "https://lemon-ground-090e65b10.1.azurestaticapps.net",
-                "https://localhost:4200" // for local development
-              )
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+                "https://localhost:4200",
+                "http://localhost:4200"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
-// Add DbContext
+// DbContext (enable transient retry)
 builder.Services.AddDbContext<IssueTrackerDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        sql => sql.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null)
+    ));
 
-// Add AutoMapper
+// AutoMapper
 builder.Services.AddAutoMapper(typeof(Program));
 
-// Add Services
+// App services
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<ProjectService>();
 builder.Services.AddScoped<IssueService>();
 
-// Add JWT Authentication
-var jwtSettings = builder.Configuration.GetSection("Jwt");
-var key = Encoding.ASCII.GetBytes(jwtSettings["SecretKey"]);
+// JWT auth
+var jwt = builder.Configuration.GetSection("Jwt");
+var key = Encoding.ASCII.GetBytes(jwt["SecretKey"]!);
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.RequireHttpsMetadata = false; // set true in production if you have HTTPS
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(key),
             ValidateIssuer = true,
-            ValidIssuer = jwtSettings["Issuer"],
+            ValidIssuer = jwt["Issuer"],
             ValidateAudience = true,
-            ValidAudience = jwtSettings["Audience"],
+            ValidAudience = jwt["Audience"],
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
         };
@@ -64,28 +89,34 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Swagger
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    app.UseHsts();
+}
 
+// HTTPS redirect (dev cert must be trusted if you call https://localhost)
 app.UseHttpsRedirection();
 
-// Use CORS
+// CORS before auth
 app.UseCors("AllowAngularApp");
 
+// Auth
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
-// Ensure database is created
+// Apply migrations (recommended over EnsureCreated for EF Core)
 using (var scope = app.Services.CreateScope())
 {
-    var context = scope.ServiceProvider.GetRequiredService<IssueTrackerDbContext>();
-    context.Database.EnsureCreated();
+    var db = scope.ServiceProvider.GetRequiredService<IssueTrackerDbContext>();
+    db.Database.Migrate();
 }
 
 app.Run();
