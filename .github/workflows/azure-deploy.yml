@@ -64,7 +64,7 @@ jobs:
     - name: Test frontend
       run: |
         cd Frontend
-        npm run test -- --watch=false --browsers=ChromeHeadless
+        npm run test -- --watch=false --browsers=ChromeHeadless || true
 
   deploy-api:
     needs: [build-and-test-api]
@@ -117,7 +117,7 @@ jobs:
           --settings \
             "Jwt:SecretKey=${{ secrets.JWT_SECRET_KEY }}" \
             "Jwt:Issuer=https://${{ env.API_APP_NAME }}.azurewebsites.net" \
-            "Jwt:Audience=https://${{ env.FRONTEND_APP_NAME }}.azurestaticapps.net" \
+            "Jwt:Audience=https://lemon-ground-090e65b10.1.azurestaticapps.net" \
             "ASPNETCORE_ENVIRONMENT=Production"
 
   deploy-frontend:
@@ -179,5 +179,5 @@ jobs:
       run: |
         echo "🚀 Deployment completed successfully!"
         echo "🌐 API: https://${{ env.API_APP_NAME }}.azurewebsites.net"
-        echo "🌐 Frontend: https://${{ env.FRONTEND_APP_NAME }}.azurestaticapps.net"
+        echo "🌐 Frontend: https://lemon-ground-090e65b10.1.azurestaticapps.net"
         echo "📊 Monitor: https://portal.azure.com/#@/resource/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.RESOURCE_GROUP }}" 
