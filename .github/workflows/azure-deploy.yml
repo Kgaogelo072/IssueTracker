@@ -162,17 +162,14 @@ jobs:
     
     - name: Deploy to Azure Static Web Apps
       run: |
-        # Create Static Web App if it doesn't exist
+        # Create Static Web App if it doesn't exist (without source control)
         if ! az staticwebapp show --name issuetracker-frontend --resource-group ${{ env.RESOURCE_GROUP }} --query "name" -o tsv 2>/dev/null; then
           echo "Creating Static Web App..."
           az staticwebapp create \
             --name issuetracker-frontend \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --location "Central US" \
-            --source . \
-            --branch main \
-            --app-location Frontend \
-            --output-location dist/issue-tracker-frontend
+            --sku Free
         fi
         
         # Get the Static Web App URL
