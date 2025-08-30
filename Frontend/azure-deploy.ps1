@@ -80,7 +80,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "Deployment completed successfully!" -ForegroundColor Green
-Write-Host "Your frontend is available at: https://$StaticWebAppName.azurestaticapps.net" -ForegroundColor Cyan
+Write-Host "Your frontend is available at: https://$StaticWebAppName.azurestaticapps.net" -ForegroundColor Cyan 
 Write-Host "Monitor your app at: https://portal.azure.com/#@/resource/subscriptions/*/resourceGroups/$ResourceGroupName/providers/Microsoft.Web/staticSites/$StaticWebAppName" -ForegroundColor Cyan
 
 # Step 5: Configure custom domain (optional)

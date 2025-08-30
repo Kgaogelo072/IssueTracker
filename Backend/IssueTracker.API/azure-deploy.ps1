@@ -4,16 +4,16 @@
 param(
     [Parameter(Mandatory=$true)]
     [string]$ResourceGroupName,
-
+    
     [Parameter(Mandatory=$true)]
     [string]$AppServiceName,
-
+    
     [Parameter(Mandatory=$true)]
     [string]$SqlServerName,
-
+    
     [Parameter(Mandatory=$true)]
     [string]$DatabaseName,
-
+    
     [Parameter(Mandatory=$true)]
     [string]$SqlAdminPassword,
 
