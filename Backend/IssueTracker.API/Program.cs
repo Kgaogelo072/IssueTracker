@@ -40,7 +40,7 @@ builder.Services.AddCors(options =>
     {
         policy
             .WithOrigins(
-                "https://lemon-ground-090e65b10.1.azurestaticapps.net",
+                "https://salmon-wave-074734d10.2.azurestaticapps.net",
                 "https://localhost:4200",
                 "http://localhost:4200"
             )
