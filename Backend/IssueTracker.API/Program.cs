@@ -34,6 +34,7 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // CORS (must be specific when using AllowCredentials)
+// Updated for Azure deployment with correct frontend URLs
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngularApp", policy =>
