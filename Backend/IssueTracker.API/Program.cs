@@ -34,17 +34,20 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // CORS (must be specific when using AllowCredentials)
-var allowedOrigins = builder.Configuration.GetValue<string>("Cors:AllowedOrigins")?
-    .Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-    ?? Array.Empty<string>();
-
-builder.Services.AddCors(o =>
+builder.Services.AddCors(options =>
 {
-    o.AddPolicy("AllowFrontend", p =>
-        p.WithOrigins(allowedOrigins)
-         .AllowAnyHeader()
-         .AllowAnyMethod()
-         .SetPreflightMaxAge(TimeSpan.FromHours(1)));
+    options.AddPolicy("AllowAngularApp", policy =>
+    {
+        policy
+            .WithOrigins(
+                "https://salmon-wave-074734d10.2.azurestaticapps.net",
+                "https://localhost:4200",
+                "http://localhost:4200"
+            )
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
 });
 
 // DbContext (enable transient retry)
