@@ -51,8 +51,7 @@ jobs:
         working-directory: Frontend
         run: npm ci
 
-      # If your app reads from src/environments/environment.ts,
-      # this ensures the CI build has the correct API URL.
+      # Ensure prod env is present; adjust if you already have fileReplacements
       - name: Inject production environment.ts
         working-directory: Frontend
         run: |
@@ -129,14 +128,6 @@ jobs:
               "Jwt__Audience=${{ secrets.JWT_AUDIENCE }}" \
               "Cors__AllowedOrigins=https://${{ secrets.SWA_HOSTNAME }}"
 
-      # Optional: run EF Core migrations from CI (uncomment when ready)
-      # - name: Run EF Core migrations
-      #   run: |
-      #     dotnet tool install --global dotnet-ef
-      #     export PATH="$PATH:/home/runner/.dotnet/tools"
-      #     cd Backend/IssueTracker.API
-      #     dotnet ef database update --connection "${{ secrets.AZURE_SQL_CONNECTION_STRING }}"
-
   deploy-frontend:
     needs: [ build-and-test-frontend ]
     runs-on: ubuntu-latest
@@ -164,9 +155,17 @@ jobs:
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
+          # REQUIRED
           azure_static_web_apps_api_token: ${{ secrets.SWA_DEPLOYMENT_TOKEN }}
-          app_location: "dist"     # we downloaded the built files here
-          output_location: "."     # when skip_app_build not set, "." is fine for prebuilt
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: ${{ (github.event_name == 'pull_request' && github.event.action == 'closed') && 'close' || 'upload' }}
+
+          # Prebuilt content
+          app_location: "dist"     # this is the folder containing index.html
+          skip_app_build: true
+          # NOTE: when skip_app_build=true, omit output_location
+
+          production_branch: ${{ github.ref_name }}
 
   notify-deployment:
     needs: [ deploy-api, deploy-frontend ]
