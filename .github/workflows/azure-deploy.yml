@@ -117,7 +117,7 @@ jobs:
           --settings \
             "Jwt__SecretKey=${{ secrets.JWT_SECRET_KEY }}" \
             "Jwt__Issuer=https://${{ env.API_APP_NAME }}.azurewebsites.net" \
-            "Jwt__Audience=https://lemon-ground-090e65b10.1.azurestaticapps.net" \
+            "Jwt__Audience=https://issuetracker-frontend.azurestaticapps.net" \
             "ASPNETCORE_ENVIRONMENT=Production"
 
   deploy-frontend:
@@ -172,19 +172,11 @@ jobs:
             --sku Free
         fi
         
-        # Get the Static Web App URL
-        SWA_URL=$(az staticwebapp show --name issuetracker-frontend --resource-group ${{ env.RESOURCE_GROUP }} --query "defaultHostname" -o tsv)
+        # Get the deployment token
+        DEPLOYMENT_TOKEN=$(az staticwebapp secrets list --name issuetracker-frontend --resource-group ${{ env.RESOURCE_GROUP }} --query "properties.apiKey" -o tsv)
         
-        # Create a zip file of the built frontend
-        cd Frontend/dist/issue-tracker-frontend
-        zip -r ../../../frontend-deploy.zip .
-        
-        # Deploy using the deployment token
-        curl -X POST \
-          -H "Authorization: Bearer ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}" \
-          -H "Content-Type: application/zip" \
-          --data-binary @../../../frontend-deploy.zip \
-          "https://$SWA_URL/api/zipdeploy"
+        # Deploy using Azure Static Web Apps CLI
+        npx @azure/static-web-apps-cli@latest deploy Frontend/dist/issue-tracker-frontend --deployment-token $DEPLOYMENT_TOKEN
 
   notify-deployment:
     needs: [deploy-api, deploy-frontend]
@@ -196,5 +188,5 @@ jobs:
       run: |
         echo "🚀 Deployment completed successfully!"
         echo "🌐 API: https://${{ env.API_APP_NAME }}.azurewebsites.net"
-        echo "🌐 Frontend: https://lemon-ground-090e65b10.1.azurestaticapps.net"
+        echo "🌐 Frontend: https://issuetracker-frontend.azurestaticapps.net"
         echo "📊 Monitor: https://portal.azure.com/#@/resource/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.RESOURCE_GROUP }}" 
