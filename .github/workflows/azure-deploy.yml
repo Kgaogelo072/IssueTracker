@@ -51,7 +51,7 @@ jobs:
         working-directory: Frontend
         run: npm ci
 
-      # Ensure prod env is present; adjust if you already have fileReplacements
+      # Ensure prod env is present; adjust if you already have fileReplacements configured
       - name: Inject production environment.ts
         working-directory: Frontend
         run: |
@@ -79,7 +79,7 @@ jobs:
   deploy-api:
     needs: [ build-and-test-api ]
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' || github.ref_name == 'master' }}
+    if: ${{ github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'master') }}
     environment: production
     steps:
       - uses: actions/checkout@v4
@@ -128,10 +128,18 @@ jobs:
               "Jwt__Audience=${{ secrets.JWT_AUDIENCE }}" \
               "Cors__AllowedOrigins=https://${{ secrets.SWA_HOSTNAME }}"
 
+      # Optional: run EF Core migrations from CI (uncomment when ready)
+      # - name: Run EF Core migrations
+      #   run: |
+      #     dotnet tool install --global dotnet-ef
+      #     export PATH="$PATH:/home/runner/.dotnet/tools"
+      #     cd Backend/IssueTracker.API
+      #     dotnet ef database update --connection "${{ secrets.AZURE_SQL_CONNECTION_STRING }}"
+
   deploy-frontend:
     needs: [ build-and-test-frontend ]
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' || github.ref_name == 'master' }}
+    if: ${{ github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'master') }}
     environment: production
     steps:
       - name: Download frontend artifact
@@ -152,25 +160,32 @@ jobs:
           }
           EOF
 
+      - name: Verify SWA token (push only)
+        run: |
+          if [ -z "${{ secrets.SWA_DEPLOYMENT_TOKEN }}" ]; then
+            echo "Missing SWA_DEPLOYMENT_TOKEN secret." && exit 1
+          fi
+
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
-          # REQUIRED
-          azure_static_web_apps_api_token: ${{ secrets.SWA_DEPLOYMENT_TOKEN }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          action: ${{ (github.event_name == 'pull_request' && github.event.action == 'closed') && 'close' || 'upload' }}
+          # token
+          deployment_token: ${{ secrets.SWA_DEPLOYMENT_TOKEN }}
+          azure_static_web_apps_api_token: ${{ secrets.SWA_DEPLOYMENT_TOKEN }} # back-compat
+          repo_token: ${{ github.token }}
 
-          # Prebuilt content
-          app_location: "dist"     # this is the folder containing index.html
+          # deploy behavior
+          action: upload
+          app_location: "dist"      # folder that contains index.html (downloaded artifact path)
           skip_app_build: true
-          # NOTE: when skip_app_build=true, omit output_location
-
           production_branch: ${{ github.ref_name }}
+          # helpful if a PR workflow ever calls this job:
+          skip_deploy_on_missing_secrets: true
 
   notify-deployment:
     needs: [ deploy-api, deploy-frontend ]
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' || github.ref_name == 'master' }}
+    if: ${{ github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'master') }}
     steps:
       - name: Deployment Summary
         run: |
