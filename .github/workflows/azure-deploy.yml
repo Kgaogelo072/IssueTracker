@@ -10,183 +10,186 @@ env:
   RESOURCE_GROUP: rg-issuetracker
   API_APP_NAME: issuetracker-api
   FRONTEND_APP_NAME: issuetracker-frontend
-  SQL_SERVER_NAME: issuetracker-sql
-  DATABASE_NAME: IssueTrackerDb
+  # From angular.json -> "outputPath": "dist/issue-tracker-frontend"
+  FRONTEND_DIST: Frontend/dist/issue-tracker-frontend
+
+concurrency:
+  group: production
+  cancel-in-progress: true
 
 jobs:
   build-and-test-api:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '9.0.x'
-    
-    - name: Restore dependencies
-      run: |
-        cd Backend/IssueTracker.API
-        dotnet restore
-    
-    - name: Build API
-      run: |
-        cd Backend/IssueTracker.API
-        dotnet build --no-restore --configuration Release
-    
-    - name: Test API
-      run: |
-        cd Backend/IssueTracker.API
-        dotnet test --no-build --verbosity normal --configuration Release
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x' # use 9.x only if your project targets .NET 9
+
+      - name: Restore, Build, Test API
+        working-directory: Backend/IssueTracker.API
+        run: |
+          dotnet restore
+          dotnet build --no-restore -c Release
+          dotnet test --no-build -c Release --verbosity normal
 
   build-and-test-frontend:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: Frontend/package-lock.json
-    
-    - name: Install dependencies
-      run: |
-        cd Frontend
-        npm ci
-    
-    - name: Build frontend
-      run: |
-        cd Frontend
-        npm run build -- --configuration production
-    
-    - name: Test frontend
-      run: |
-        cd Frontend
-        npm run test -- --watch=false --browsers=ChromeHeadless || true
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: Frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: Frontend
+        run: npm ci
+
+      # Ensure prod env is present; adjust if you already have fileReplacements configured
+      - name: Inject production environment.ts
+        working-directory: Frontend
+        run: |
+          mkdir -p src/environments
+          cat > src/environments/environment.ts << 'EOF'
+          export const environment = {
+            production: true,
+            apiUrl: 'https://${{ env.API_APP_NAME }}.azurewebsites.net/api'
+          };
+          EOF
+
+      - name: Build frontend
+        working-directory: Frontend
+        run: npm run build -- --configuration production
+
+      - name: Show dist contents
+        run: ls -la "${{ env.FRONTEND_DIST }}"
+
+      - name: Upload built frontend as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: ${{ env.FRONTEND_DIST }}
 
   deploy-api:
-    needs: [build-and-test-api]
+    needs: [ build-and-test-api ]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
+    if: ${{ github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'master') }}
     environment: production
-    
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '9.0.x'
-    
-    - name: Login to Azure
-      uses: azure/login@v2
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-    
-    - name: Set Azure subscription
-      run: |
-        az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-    
-    - name: Build and publish API
-      run: |
-        cd Backend/IssueTracker.API
-        dotnet publish -c Release -o ./publish
-    
-    - name: Deploy to Azure Web App
-      uses: azure/webapps-deploy@v3
-      with:
-        app-name: ${{ env.API_APP_NAME }}
-        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-        package: ./Backend/IssueTracker.API/publish
-    
-    - name: Configure connection string
-      run: |
-        az webapp config connection-string set \
-          --resource-group ${{ env.RESOURCE_GROUP }} \
-          --name ${{ env.API_APP_NAME }} \
-          --connection-string-type "SQLAzure" \
-          --settings DefaultConnection="${{ secrets.AZURE_SQL_CONNECTION_STRING }}"
-    
-    - name: Configure app settings
-      run: |
-        az webapp config appsettings set \
-          --resource-group ${{ env.RESOURCE_GROUP }} \
-          --name ${{ env.API_APP_NAME }} \
-          --settings \
-            "Jwt__SecretKey=${{ secrets.JWT_SECRET_KEY }}" \
-            "Jwt__Issuer=https://${{ env.API_APP_NAME }}.azurewebsites.net" \
-            "Jwt__Audience=https://issuetracker-frontend.azurestaticapps.net" \
-            "ASPNETCORE_ENVIRONMENT=Production"
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Publish API
+        working-directory: Backend/IssueTracker.API
+        run: dotnet publish -c Release -o ./publish
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.API_APP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ./Backend/IssueTracker.API/publish
+
+      - name: Azure CLI login (for settings)
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Select subscription
+        run: az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Configure connection string
+        run: |
+          az webapp config connection-string set \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name ${{ env.API_APP_NAME }} \
+            --connection-string-type "SQLAzure" \
+            --settings DefaultConnection="${{ secrets.AZURE_SQL_CONNECTION_STRING }}"
+
+      - name: Configure app settings
+        run: |
+          az webapp config appsettings set \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name ${{ env.API_APP_NAME }} \
+            --settings \
+              "ASPNETCORE_ENVIRONMENT=Production" \
+              "Jwt__SecretKey=${{ secrets.JWT_SECRET_KEY }}" \
+              "Jwt__Issuer=https://${{ env.API_APP_NAME }}.azurewebsites.net" \
+              "Jwt__Audience=${{ secrets.JWT_AUDIENCE }}" \
+              "Cors__AllowedOrigins=https://${{ secrets.SWA_HOSTNAME }}"
+
+      # Optional: run EF Core migrations from CI (uncomment when ready)
+      # - name: Run EF Core migrations
+      #   run: |
+      #     dotnet tool install --global dotnet-ef
+      #     export PATH="$PATH:/home/runner/.dotnet/tools"
+      #     cd Backend/IssueTracker.API
+      #     dotnet ef database update --connection "${{ secrets.AZURE_SQL_CONNECTION_STRING }}"
 
   deploy-frontend:
-    needs: [build-and-test-frontend]
+    needs: [ build-and-test-frontend ]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
+    if: ${{ github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'master') }}
     environment: production
-    
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: Frontend/package-lock.json
-    
-    - name: Login to Azure
-      uses: azure/login@v2
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-    
-    - name: Set Azure subscription
-      run: |
-        az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-    
-    - name: Install dependencies
-      run: |
-        cd Frontend
-        npm ci
-    
-    - name: Update environment configuration
-      run: |
-        cd Frontend
-        echo "export const environment = { production: true, apiUrl: 'https://${{ env.API_APP_NAME }}.azurewebsites.net/api' };" > src/environments/environment.prod.ts
-    
-    - name: Build frontend
-      run: |
-        cd Frontend
-        npm run build -- --configuration production
-    
-    - name: Deploy to Azure Static Web Apps
-      run: |
-        # Create Static Web App if it doesn't exist (without source control)
-        if ! az staticwebapp show --name issuetracker-frontend --resource-group ${{ env.RESOURCE_GROUP }} --query "name" -o tsv 2>/dev/null; then
-          echo "Creating Static Web App..."
-          az staticwebapp create \
-            --name issuetracker-frontend \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --location "Central US" \
-            --sku Free
-        fi
-        
-        # Get the deployment token
-        DEPLOYMENT_TOKEN=$(az staticwebapp secrets list --name issuetracker-frontend --resource-group ${{ env.RESOURCE_GROUP }} --query "properties.apiKey" -o tsv)
-        
-        # Deploy using Azure Static Web Apps CLI
-        npx @azure/static-web-apps-cli@latest deploy Frontend/dist/issue-tracker-frontend --deployment-token $DEPLOYMENT_TOKEN
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist
+
+      # SPA fallback so deep links / refresh work on SWA
+      - name: Ensure staticwebapp.config.json
+        run: |
+          cat > dist/staticwebapp.config.json << 'EOF'
+          {
+            "navigationFallback": {
+              "rewrite": "/index.html",
+              "exclude": ["/assets/*", "/*.{css,js,png,jpg,svg,ico}"]
+            }
+          }
+          EOF
+
+      - name: Verify SWA token (push only)
+        run: |
+          if [ -z "${{ secrets.SWA_DEPLOYMENT_TOKEN }}" ]; then
+            echo "Missing SWA_DEPLOYMENT_TOKEN secret." && exit 1
+          fi
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          # token
+          deployment_token: ${{ secrets.SWA_DEPLOYMENT_TOKEN }}
+          azure_static_web_apps_api_token: ${{ secrets.SWA_DEPLOYMENT_TOKEN }} # back-compat
+          repo_token: ${{ github.token }}
+
+          # deploy behavior
+          action: upload
+          app_location: "dist"      # folder that contains index.html (downloaded artifact path)
+          skip_app_build: true
+          production_branch: ${{ github.ref_name }}
+          # helpful if a PR workflow ever calls this job:
+          skip_deploy_on_missing_secrets: true
 
   notify-deployment:
-    needs: [deploy-api, deploy-frontend]
+    needs: [ deploy-api, deploy-frontend ]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
-    
+    if: ${{ github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'master') }}
     steps:
-    - name: Deployment Summary
-      run: |
-        echo "🚀 Deployment completed successfully!"
-        echo "🌐 API: https://${{ env.API_APP_NAME }}.azurewebsites.net"
-        echo "🌐 Frontend: https://issuetracker-frontend.azurestaticapps.net"
-        echo "📊 Monitor: https://portal.azure.com/#@/resource/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.RESOURCE_GROUP }}" 
+      - name: Deployment Summary
+        run: |
+          echo "🚀 Deployment completed!"
+          echo "API: https://${{ env.API_APP_NAME }}.azurewebsites.net"
+          echo "Frontend: https://${{ secrets.SWA_HOSTNAME }}"
+          echo "Portal (resource group): https://portal.azure.com/#@/resource/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.RESOURCE_GROUP }}"
