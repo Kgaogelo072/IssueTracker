@@ -1,4 +1,4 @@
 export const environment = {
-  production: true,
-  apiUrl: '/api', // <-- use SWA proxy (same-origin)
+  production: false,
+  apiUrl: 'https://issuetracker-api.azurewebsites.net/api'
 };
