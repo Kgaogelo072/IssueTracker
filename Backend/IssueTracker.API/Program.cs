@@ -35,10 +35,10 @@ builder.Services.AddSwaggerGen(c =>
 
 // CORS (must be specific when using AllowCredentials)
 // Updated for Azure deployment with correct frontend URLs
+// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngularApp", policy =>
-    {
         policy
             .WithOrigins(
                 "https://salmon-wave-074734d10.2.azurestaticapps.net",
@@ -46,11 +46,12 @@ builder.Services.AddCors(options =>
                 "https://localhost:4200",
                 "http://localhost:4200"
             )
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
-    });
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .SetPreflightMaxAge(TimeSpan.FromMinutes(60))
+    );
 });
+
 
 // DbContext (enable transient retry)
 builder.Services.AddDbContext<IssueTrackerDbContext>(options =>
