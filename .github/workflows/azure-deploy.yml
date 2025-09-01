@@ -51,7 +51,7 @@ jobs:
         working-directory: Frontend
         run: npm ci
 
-      # For production build, point Angular at the SWA proxy to avoid CORS:
+      # Point Angular (prod) at the SWA proxy to avoid CORS
       - name: Inject production environment.ts
         working-directory: Frontend
         run: |
@@ -59,7 +59,7 @@ jobs:
           cat > src/environments/environment.ts << 'EOF'
           export const environment = {
             production: true,
-            apiUrl: '/api' // SWA proxy (see staticwebapp.config.json)
+            apiUrl: '/api' // SWA will proxy /api/* to the App Service
           };
           EOF
 
@@ -100,7 +100,7 @@ jobs:
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: ./Backend/IssueTracker.API/publish
 
-      # Optional: configure app settings with Azure CLI (keeps localhost dev CORS)
+      # Optional: app settings / connection string via Azure CLI
       - name: Azure CLI login
         uses: azure/login@v2
         with:
@@ -128,16 +128,6 @@ jobs:
               "Jwt__Issuer=https://${{ env.API_APP_NAME }}.azurewebsites.net" \
               "Jwt__Audience=${{ secrets.JWT_AUDIENCE }}" \
               "Cors__AllowedOrigins=https://localhost:4200"
-      
-      - name: Run database migrations
-        run: |
-          echo "Running database migrations..."
-          # Use curl to trigger the migration via a custom endpoint or use Kudu API
-          echo "Database migrations will be run manually after deployment"
-          echo "To run migrations manually, use:"
-          echo "1. Go to Azure Portal -> App Service -> Advanced Tools (Kudu)"
-          echo "2. Open SSH console"
-          echo "3. Run: cd /home/site/wwwroot && /usr/share/dotnet/dotnet ef database update"
 
   deploy-frontend:
     needs: [ build-and-test-frontend ]
@@ -156,13 +146,18 @@ jobs:
         run: |
           cat > dist/staticwebapp.config.json << 'EOF'
           {
+            "routes": [
+              {
+                "route": "/api/{*path}",
+                "rewrite": "https://issuetracker-api.azurewebsites.net/api/{path}",
+                "allowedRoles": ["anonymous"],
+                "methods": ["GET","POST","PUT","PATCH","DELETE","OPTIONS"]
+              }
+            ],
             "navigationFallback": {
               "rewrite": "/index.html",
-              "exclude": ["/assets/*", "/*.{css,js,png,jpg,svg,ico,webp,woff,woff2}"]
-            },
-            "routes": [
-              { "route": "/api/*", "rewrite": "https://issuetracker-api.azurewebsites.net/api/*" }
-            ]
+              "exclude": ["/api/*", "/assets/*", "/*.{css,js,png,jpg,svg,ico,webp,woff,woff2}"]
+            }
           }
           EOF
           echo "----- staticwebapp.config.json -----"
@@ -198,6 +193,6 @@ jobs:
           if [ -n "${{ secrets.SWA_HOSTNAME }}" ]; then
             echo "Frontend: https://${{ secrets.SWA_HOSTNAME }}"
           else
-            echo "Frontend: (SWA hostname not provided as a secret)"
+            echo "Frontend deployed to your Azure Static Web App."
           fi
           echo "Portal (resource group): https://portal.azure.com/#@/resource/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.RESOURCE_GROUP }}"
