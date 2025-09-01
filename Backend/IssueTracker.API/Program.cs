@@ -74,15 +74,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 var app = builder.Build();
 
 // Swagger
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-else
-{
-    app.UseHsts();
-}
+
+app.UseSwagger();
+app.UseSwaggerUI();
+
 
 // HTTPS redirect
 app.UseHttpsRedirection();
