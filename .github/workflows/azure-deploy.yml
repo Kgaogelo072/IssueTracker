@@ -142,24 +142,22 @@ jobs:
           path: dist
 
       # SWA proxy: forward /api/* to the App Service, and keep SPA fallback
-      - name: Write staticwebapp.config.json
-        run: |
-          cat > dist/staticwebapp.config.json << 'EOF'
-          {
-            "routes": [
-              {
-                "route": "/api/{*path}",
-                "rewrite": "https://issuetracker-api.azurewebsites.net/api/{path}",
-                "allowedRoles": ["anonymous"],
-                "methods": ["GET","POST","PUT","PATCH","DELETE","OPTIONS"]
-              }
-            ],
-            "navigationFallback": {
-              "rewrite": "/index.html",
-              "exclude": ["/api/*", "/assets/*", "/*.{css,js,png,jpg,svg,ico,webp,woff,woff2}"]
-            }
-          }
-          EOF
+             - name: Write staticwebapp.config.json
+         run: |
+           cat > dist/staticwebapp.config.json << 'EOF'
+           {
+             "routes": [
+               {
+                 "route": "/api/*",
+                 "rewrite": "https://issuetracker-api.azurewebsites.net/api/*"
+               }
+             ],
+             "navigationFallback": {
+               "rewrite": "/index.html",
+               "exclude": ["/api/*", "/assets/*", "/*.{css,js,png,jpg,svg,ico,webp,woff,woff2}"]
+             }
+           }
+           EOF
           echo "----- staticwebapp.config.json -----"
           cat dist/staticwebapp.config.json
 
@@ -169,17 +167,15 @@ jobs:
             echo "Missing SWA_DEPLOYMENT_TOKEN secret." && exit 1
           fi
 
-      - name: Deploy to Azure Static Web Apps
-        uses: Azure/static-web-apps-deploy@v1
-        with:
-          deployment_token: ${{ secrets.SWA_DEPLOYMENT_TOKEN }}
-          azure_static_web_apps_api_token: ${{ secrets.SWA_DEPLOYMENT_TOKEN }} # back-compat
-          repo_token: ${{ github.token }}
-          action: upload
-          app_location: "dist"      # folder that contains index.html + staticwebapp.config.json
-          skip_app_build: true
-          production_branch: ${{ github.ref_name }}
-          skip_deploy_on_missing_secrets: true
+             - name: Deploy to Azure Static Web Apps
+         uses: Azure/static-web-apps-deploy@v1
+         with:
+           azure_static_web_apps_api_token: ${{ secrets.SWA_DEPLOYMENT_TOKEN }}
+           repo_token: ${{ github.token }}
+           action: upload
+           app_location: "dist"
+           skip_app_build: true
+           production_branch: ${{ github.ref_name }}
 
   notify-deployment:
     needs: [ deploy-api, deploy-frontend ]
