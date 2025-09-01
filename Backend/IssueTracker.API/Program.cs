@@ -44,10 +44,11 @@ builder.Services.AddDbContext<IssueTrackerDbContext>(options =>
 builder.Services.AddAutoMapper(typeof(Program));
 
 // App services
-builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<JwtService>();
-builder.Services.AddScoped<ProjectService>();
-builder.Services.AddScoped<IssueService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<IIssueService, IssueService>();
+
 
 // JWT auth
 var jwt = builder.Configuration.GetSection("Jwt");
