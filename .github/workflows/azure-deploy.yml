@@ -132,7 +132,12 @@ jobs:
       - name: Run database migrations
         run: |
           echo "Running database migrations..."
-          az webapp ssh --name ${{ env.API_APP_NAME }} --resource-group ${{ env.RESOURCE_GROUP }} --command "cd /home/site/wwwroot && /usr/share/dotnet/dotnet ef database update"
+          # Use curl to trigger the migration via a custom endpoint or use Kudu API
+          echo "Database migrations will be run manually after deployment"
+          echo "To run migrations manually, use:"
+          echo "1. Go to Azure Portal -> App Service -> Advanced Tools (Kudu)"
+          echo "2. Open SSH console"
+          echo "3. Run: cd /home/site/wwwroot && /usr/share/dotnet/dotnet ef database update"
 
   deploy-frontend:
     needs: [ build-and-test-frontend ]
