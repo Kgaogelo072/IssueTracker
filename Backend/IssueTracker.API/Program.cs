@@ -89,14 +89,27 @@ app.UseAuthorization();
 app.MapControllers();
 
 // Diagnostic endpoint to check available routes
+app.MapGet("/healthz", () => Results.Ok("OK"));
 app.MapGet("/__routes", (EndpointDataSource es) =>
     Results.Json(es.Endpoints.Select(e => e.DisplayName)));
 
+
 // Apply migrations
+// Apply migrations (don’t kill the process if it fails)
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<IssueTrackerDbContext>();
-    db.Database.Migrate();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<IssueTrackerDbContext>();
+        db.Database.Migrate();
+        logger.LogInformation("DB migrated.");
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "DB migration failed on startup.");
+        // Intentionally not rethrowing so Kestrel still starts
+    }
 }
 
 app.Run();
