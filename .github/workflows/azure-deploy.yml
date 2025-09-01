@@ -9,7 +9,7 @@ on:
 env:
   RESOURCE_GROUP: rg-issuetracker
   API_APP_NAME: issuetracker-api
-  # From angular.json -> "outputPath"
+  # From angular.json -> "outputPath": "dist/issue-tracker-frontend"
   FRONTEND_DIST: Frontend/dist/issue-tracker-frontend
 
 concurrency:
@@ -146,8 +146,8 @@ jobs:
           name: frontend-dist
           path: dist
 
-      # Robust app root detection; sets for current step AND future steps
       - name: Determine app root
+        id: appr
         shell: bash
         run: |
           set -euo pipefail
@@ -156,6 +156,10 @@ jobs:
             APP_ROOT="dist"
           elif [ -f "dist/browser/index.html" ]; then
             APP_ROOT="dist/browser"
+          elif [ -f "dist/issue-tracker-frontend/index.html" ]; then
+            APP_ROOT="dist/issue-tracker-frontend"
+          elif [ -f "dist/issue-tracker-frontend/browser/index.html" ]; then
+            APP_ROOT="dist/issue-tracker-frontend/browser"
           else
             FOUND="$(find dist -maxdepth 3 -type f -name index.html | head -n 1 || true)"
             if [ -n "$FOUND" ]; then
@@ -167,34 +171,43 @@ jobs:
             echo "Tree under dist:"; ls -R dist || true
             exit 1
           fi
-          echo "Using APP_ROOT=$APP_ROOT"
-          # make available to subsequent steps
           echo "APP_ROOT=$APP_ROOT" >> "$GITHUB_ENV"
-          # also export for this step (not strictly needed anymore)
-          export APP_ROOT
+          echo "Using APP_ROOT=$APP_ROOT"
           ls -la "$APP_ROOT"
 
-      - name: Write staticwebapp.config.json (proxy /api to App Service)
-        shell: bash
+      - name: Inspect existing SWA config
         run: |
-          cat > "$APP_ROOT/staticwebapp.config.json" << 'EOF'
+          echo ">>> Listing ${{ env.APP_ROOT }}"
+          ls -la "${{ env.APP_ROOT }}" || true
+          echo ">>> Existing staticwebapp.config.json (if any):"
+          [ -f "${{ env.APP_ROOT }}/staticwebapp.config.json" ] && cat "${{ env.APP_ROOT }}/staticwebapp.config.json" || echo "None"
+          echo ">>> Existing routes.json (if any):"
+          [ -f "${{ env.APP_ROOT }}/routes.json" ] && cat "${{ env.APP_ROOT }}/routes.json" || echo "None"
+
+      - name: Replace SWA config with a safe one (proxy /api)
+        run: |
+          rm -f "${{ env.APP_ROOT }}/routes.json"
+          cat > "${{ env.APP_ROOT }}/staticwebapp.config.json" << 'EOF'
           {
             "routes": [
               {
-                "route": "/api/{*path}",
-                "rewrite": "https://issuetracker-api.azurewebsites.net/api/{path}",
-                "allowedRoles": [ "anonymous" ],
-                "methods": [ "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS" ]
+                "route": "/api/*",
+                "rewrite": "https://issuetracker-api.azurewebsites.net/api/*",
+                "allowedRoles": ["anonymous"]
               }
             ],
             "navigationFallback": {
               "rewrite": "/index.html",
-              "exclude": [ "/api/*", "/assets/*", "/*.{css,js,png,jpg,svg,ico,webp,woff,woff2}" ]
+              "exclude": [
+                "/api/*",
+                "/assets/*",
+                "/favicon.ico"
+              ]
             }
           }
           EOF
           echo "----- staticwebapp.config.json -----"
-          cat "$APP_ROOT/staticwebapp.config.json"
+          cat "${{ env.APP_ROOT }}/staticwebapp.config.json"
 
       - name: Verify SWA token
         run: |
