@@ -1,14 +1,18 @@
 {
   "routes": [
     {
-      "route": "/api/{*path}",
-      "rewrite": "https://issuetracker-api.azurewebsites.net/api/{path}",
-      "allowedRoles": ["anonymous"],
-      "methods": ["GET","POST","PUT","PATCH","DELETE","OPTIONS"]
+      "route": "/api/*",
+      "rewrite": "https://issuetracker-api.azurewebsites.net/api/*",
+      "allowedRoles": ["anonymous"]
     }
   ],
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": ["/api/*", "/assets/*", "/*.{css,js,png,jpg,svg,ico,webp,woff,woff2}"]
+    "exclude": [
+      "/api/*",
+      "/assets/*",
+      "/favicon.ico"
+    ]
   }
 }
+
