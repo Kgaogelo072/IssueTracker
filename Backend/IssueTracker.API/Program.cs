@@ -33,6 +33,26 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+// CORS (must be specific when using AllowCredentials)
+// Updated for Azure deployment with correct frontend URLs
+// CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngularApp", policy =>
+        policy
+            .WithOrigins(
+                "https://salmon-wave-074734d10.2.azurestaticapps.net",
+                "https://salmon-wave-074734d10-preview.centralus.2.azurestaticapps.net",
+                "https://localhost:4200",
+                "http://localhost:4200"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .SetPreflightMaxAge(TimeSpan.FromMinutes(60))
+    );
+});
+
+
 // DbContext (enable transient retry)
 builder.Services.AddDbContext<IssueTrackerDbContext>(options =>
     options.UseSqlServer(
@@ -48,7 +68,6 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<IIssueService, IssueService>();
-
 
 // JWT auth
 var jwt = builder.Configuration.GetSection("Jwt");
@@ -74,13 +93,21 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 var app = builder.Build();
 
 // Swagger
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+else
+{
+    app.UseHsts();
+}
 
-app.UseSwagger();
-app.UseSwaggerUI();
-
-
-// HTTPS redirect
+// HTTPS redirect (dev cert must be trusted if you call https://localhost)
 app.UseHttpsRedirection();
+
+// CORS before auth
+app.UseCors("AllowAngularApp");
 
 // Auth
 app.UseAuthentication();
@@ -88,28 +115,11 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Diagnostic endpoint to check available routes
-app.MapGet("/healthz", () => Results.Ok("OK"));
-app.MapGet("/__routes", (EndpointDataSource es) =>
-    Results.Json(es.Endpoints.Select(e => e.DisplayName)));
-
-
-// Apply migrations
-// Apply migrations (don’t kill the process if it fails)
+// Apply migrations (recommended over EnsureCreated for EF Core)
 using (var scope = app.Services.CreateScope())
 {
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    try
-    {
-        var db = scope.ServiceProvider.GetRequiredService<IssueTrackerDbContext>();
-        db.Database.Migrate();
-        logger.LogInformation("DB migrated.");
-    }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "DB migration failed on startup.");
-        // Intentionally not rethrowing so Kestrel still starts
-    }
+    var db = scope.ServiceProvider.GetRequiredService<IssueTrackerDbContext>();
+    db.Database.Migrate();
 }
 
 app.Run();
