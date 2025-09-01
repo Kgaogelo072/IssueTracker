@@ -51,7 +51,7 @@ jobs:
         working-directory: Frontend
         run: npm ci
 
-      # Ensure prod env is present; adjust if you already have fileReplacements configured
+      # For production build, point Angular at the SWA proxy to avoid CORS:
       - name: Inject production environment.ts
         working-directory: Frontend
         run: |
@@ -59,7 +59,7 @@ jobs:
           cat > src/environments/environment.ts << 'EOF'
           export const environment = {
             production: true,
-            apiUrl: 'https://${{ env.API_APP_NAME }}.azurewebsites.net/api'
+            apiUrl: '/api' // SWA proxy (see staticwebapp.config.json)
           };
           EOF
 
@@ -100,7 +100,8 @@ jobs:
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: ./Backend/IssueTracker.API/publish
 
-      - name: Azure CLI login (for settings)
+      # Optional: configure app settings with Azure CLI (keeps localhost dev CORS)
+      - name: Azure CLI login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
@@ -126,15 +127,7 @@ jobs:
               "Jwt__SecretKey=${{ secrets.JWT_SECRET_KEY }}" \
               "Jwt__Issuer=https://${{ env.API_APP_NAME }}.azurewebsites.net" \
               "Jwt__Audience=${{ secrets.JWT_AUDIENCE }}" \
-              "Cors__AllowedOrigins=https://${{ secrets.SWA_HOSTNAME }}"
-
-      # Optional: run EF Core migrations from CI (uncomment when ready)
-      # - name: Run EF Core migrations
-      #   run: |
-      #     dotnet tool install --global dotnet-ef
-      #     export PATH="$PATH:/home/runner/.dotnet/tools"
-      #     cd Backend/IssueTracker.API
-      #     dotnet ef database update --connection "${{ secrets.AZURE_SQL_CONNECTION_STRING }}"
+              "Cors__AllowedOrigins=https://localhost:4200"
 
   deploy-frontend:
     needs: [ build-and-test-frontend ]
@@ -148,17 +141,22 @@ jobs:
           name: frontend-dist
           path: dist
 
-      # SPA fallback so deep links / refresh work on SWA
-      - name: Ensure staticwebapp.config.json
+      # SWA proxy: forward /api/* to the App Service, and keep SPA fallback
+      - name: Write staticwebapp.config.json
         run: |
           cat > dist/staticwebapp.config.json << 'EOF'
           {
             "navigationFallback": {
               "rewrite": "/index.html",
-              "exclude": ["/assets/*", "/*.{css,js,png,jpg,svg,ico}"]
-            }
+              "exclude": ["/assets/*", "/*.{css,js,png,jpg,svg,ico,webp,woff,woff2}"]
+            },
+            "routes": [
+              { "route": "/api/*", "rewrite": "https://issuetracker-api.azurewebsites.net/api/*" }
+            ]
           }
           EOF
+          echo "----- staticwebapp.config.json -----"
+          cat dist/staticwebapp.config.json
 
       - name: Verify SWA token (push only)
         run: |
@@ -169,17 +167,13 @@ jobs:
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
-          # token
           deployment_token: ${{ secrets.SWA_DEPLOYMENT_TOKEN }}
           azure_static_web_apps_api_token: ${{ secrets.SWA_DEPLOYMENT_TOKEN }} # back-compat
           repo_token: ${{ github.token }}
-
-          # deploy behavior
           action: upload
-          app_location: "dist"      # folder that contains index.html (downloaded artifact path)
+          app_location: "dist"      # folder that contains index.html + staticwebapp.config.json
           skip_app_build: true
           production_branch: ${{ github.ref_name }}
-          # helpful if a PR workflow ever calls this job:
           skip_deploy_on_missing_secrets: true
 
   notify-deployment:
@@ -191,5 +185,9 @@ jobs:
         run: |
           echo "🚀 Deployment completed!"
           echo "API: https://${{ env.API_APP_NAME }}.azurewebsites.net"
-          echo "Frontend: https://${{ secrets.SWA_HOSTNAME }}"
+          if [ -n "${{ secrets.SWA_HOSTNAME }}" ]; then
+            echo "Frontend: https://${{ secrets.SWA_HOSTNAME }}"
+          else
+            echo "Frontend: (SWA hostname not provided as a secret)"
+          fi
           echo "Portal (resource group): https://portal.azure.com/#@/resource/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.RESOURCE_GROUP }}"
