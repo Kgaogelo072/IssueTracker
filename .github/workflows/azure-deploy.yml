@@ -128,6 +128,11 @@ jobs:
               "Jwt__Issuer=https://${{ env.API_APP_NAME }}.azurewebsites.net" \
               "Jwt__Audience=${{ secrets.JWT_AUDIENCE }}" \
               "Cors__AllowedOrigins=https://localhost:4200"
+      
+      - name: Run database migrations
+        run: |
+          echo "Running database migrations..."
+          az webapp ssh --name ${{ env.API_APP_NAME }} --resource-group ${{ env.RESOURCE_GROUP }} --command "cd /home/site/wwwroot && /usr/share/dotnet/dotnet ef database update"
 
   deploy-frontend:
     needs: [ build-and-test-frontend ]
