@@ -61,7 +61,7 @@ jobs:
       - name: Show dist contents
         run: |
           echo "---- ${{ env.FRONTEND_DIST }} ----"
-          ls -la "${{ env.FRONTEND_DIST }}"
+          ls -la "${{ env.FRONTEND_DIST }}" || true
           if [ -d "${{ env.FRONTEND_DIST }}/browser" ]; then
             echo "---- ${{ env.FRONTEND_DIST }}/browser ----"
             ls -la "${{ env.FRONTEND_DIST }}/browser"
@@ -146,22 +146,36 @@ jobs:
           name: frontend-dist
           path: dist
 
-      - name: Determine app root (Angular builder difference)
-        id: appr
+      # Robust app root detection; sets for current step AND future steps
+      - name: Determine app root
+        shell: bash
         run: |
-          if [ -d "dist/browser" ]; then
-            echo "APP_ROOT=dist/browser" >> $GITHUB_ENV
-          elif [ -d "dist/issue-tracker-frontend/browser" ]; then
-            echo "APP_ROOT=dist/issue-tracker-frontend/browser" >> $GITHUB_ENV
-          elif [ -d "dist/issue-tracker-frontend" ]; then
-            echo "APP_ROOT=dist/issue-tracker-frontend" >> $GITHUB_ENV
+          set -euo pipefail
+          APP_ROOT=""
+          if [ -f "dist/index.html" ]; then
+            APP_ROOT="dist"
+          elif [ -f "dist/browser/index.html" ]; then
+            APP_ROOT="dist/browser"
           else
-            echo "APP_ROOT=dist" >> $GITHUB_ENV
+            FOUND="$(find dist -maxdepth 3 -type f -name index.html | head -n 1 || true)"
+            if [ -n "$FOUND" ]; then
+              APP_ROOT="$(dirname "$FOUND")"
+            fi
+          fi
+          if [ -z "$APP_ROOT" ]; then
+            echo "::error::Could not locate index.html under the downloaded artifact."
+            echo "Tree under dist:"; ls -R dist || true
+            exit 1
           fi
           echo "Using APP_ROOT=$APP_ROOT"
+          # make available to subsequent steps
+          echo "APP_ROOT=$APP_ROOT" >> "$GITHUB_ENV"
+          # also export for this step (not strictly needed anymore)
+          export APP_ROOT
           ls -la "$APP_ROOT"
 
       - name: Write staticwebapp.config.json (proxy /api to App Service)
+        shell: bash
         run: |
           cat > "$APP_ROOT/staticwebapp.config.json" << 'EOF'
           {
@@ -207,4 +221,4 @@ jobs:
         run: |
           echo "🚀 Deployment completed!"
           echo "API: https://${{ env.API_APP_NAME }}.azurewebsites.net"
-          echo "SWA app deployed (see your Static Web App resource for the hostname)."
+          echo "Frontend deployed via Azure Static Web Apps."
