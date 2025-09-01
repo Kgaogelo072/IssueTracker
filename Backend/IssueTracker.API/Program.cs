@@ -33,26 +33,6 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// CORS (must be specific when using AllowCredentials)
-// Updated for Azure deployment with correct frontend URLs
-// CORS
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAngularApp", policy =>
-        policy
-            .WithOrigins(
-                "https://salmon-wave-074734d10.2.azurestaticapps.net",
-                "https://salmon-wave-074734d10-preview.centralus.2.azurestaticapps.net",
-                "https://localhost:4200",
-                "http://localhost:4200"
-            )
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .SetPreflightMaxAge(TimeSpan.FromMinutes(60))
-    );
-});
-
-
 // DbContext (enable transient retry)
 builder.Services.AddDbContext<IssueTrackerDbContext>(options =>
     options.UseSqlServer(
@@ -103,11 +83,8 @@ else
     app.UseHsts();
 }
 
-// HTTPS redirect (dev cert must be trusted if you call https://localhost)
+// HTTPS redirect
 app.UseHttpsRedirection();
-
-// CORS before auth
-app.UseCors("AllowAngularApp");
 
 // Auth
 app.UseAuthentication();
@@ -115,7 +92,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Apply migrations (recommended over EnsureCreated for EF Core)
+// Apply migrations
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<IssueTrackerDbContext>();
