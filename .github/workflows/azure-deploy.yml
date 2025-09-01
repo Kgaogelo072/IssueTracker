@@ -9,8 +9,7 @@ on:
 env:
   RESOURCE_GROUP: rg-issuetracker
   API_APP_NAME: issuetracker-api
-  FRONTEND_APP_NAME: issuetracker-frontend
-  # From angular.json -> "outputPath": "dist/issue-tracker-frontend"
+  # From angular.json -> "outputPath"
   FRONTEND_DIST: Frontend/dist/issue-tracker-frontend
 
 concurrency:
@@ -26,7 +25,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x' # use 9.x only if your project targets .NET 9
+          dotnet-version: "8.0.x"
 
       - name: Restore, Build, Test API
         working-directory: Backend/IssueTracker.API
@@ -43,27 +42,30 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
           cache-dependency-path: Frontend/package-lock.json
 
       - name: Install dependencies
         working-directory: Frontend
         run: npm ci
 
-      # Use the correct production environment that points to the real API
-      - name: Verify production environment
+      - name: Show production environment file
         working-directory: Frontend
-        run: |
-          echo "Production environment configuration:"
-          cat src/environments/environment.prod.ts
+        run: cat src/environments/environment.prod.ts
 
-      - name: Build frontend
+      - name: Build frontend (production)
         working-directory: Frontend
         run: npm run build -- --configuration production
 
       - name: Show dist contents
-        run: ls -la "${{ env.FRONTEND_DIST }}"
+        run: |
+          echo "---- ${{ env.FRONTEND_DIST }} ----"
+          ls -la "${{ env.FRONTEND_DIST }}" || true
+          if [ -d "${{ env.FRONTEND_DIST }}/browser" ]; then
+            echo "---- ${{ env.FRONTEND_DIST }}/browser ----"
+            ls -la "${{ env.FRONTEND_DIST }}/browser"
+          fi
 
       - name: Upload built frontend as artifact
         uses: actions/upload-artifact@v4
@@ -82,20 +84,26 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: "8.0.x"
 
       - name: Publish API
-        working-directory: Backend/IssueTracker.API
-        run: dotnet publish -c Release -o ./publish
+        run: dotnet publish Backend/IssueTracker.API/IssueTracker.API.csproj -c Release -o ${{ github.workspace }}/api-publish
+
+      - name: Show publish output
+        run: ls -la ${{ github.workspace }}/api-publish
+
+      - name: Zip package
+        run: |
+          cd ${{ github.workspace }}/api-publish
+          zip -r ../api.zip .
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.API_APP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: ./Backend/IssueTracker.API/publish
+          package: ${{ github.workspace }}/api.zip
 
-      # Optional: app settings / connection string via Azure CLI
       - name: Azure CLI login
         uses: azure/login@v2
         with:
@@ -121,8 +129,10 @@ jobs:
               "ASPNETCORE_ENVIRONMENT=Production" \
               "Jwt__SecretKey=${{ secrets.JWT_SECRET_KEY }}" \
               "Jwt__Issuer=https://${{ env.API_APP_NAME }}.azurewebsites.net" \
-              "Jwt__Audience=${{ secrets.JWT_AUDIENCE }}" \
-              "Cors__AllowedOrigins=https://localhost:4200"
+              "Jwt__Audience=${{ secrets.JWT_AUDIENCE }}"
+
+      - name: Restart Web App
+        run: az webapp restart --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.API_APP_NAME }}
 
   deploy-frontend:
     needs: [ build-and-test-frontend ]
@@ -136,27 +146,57 @@ jobs:
           name: frontend-dist
           path: dist
 
-      # SWA proxy: forward /api/* to the App Service, and keep SPA fallback
-      - name: Write staticwebapp.config.json
+      # Robust app root detection; sets for current step AND future steps
+      - name: Determine app root
+        shell: bash
         run: |
-          cat > dist/staticwebapp.config.json << 'EOF'
+          set -euo pipefail
+          APP_ROOT=""
+          if [ -f "dist/index.html" ]; then
+            APP_ROOT="dist"
+          elif [ -f "dist/browser/index.html" ]; then
+            APP_ROOT="dist/browser"
+          else
+            FOUND="$(find dist -maxdepth 3 -type f -name index.html | head -n 1 || true)"
+            if [ -n "$FOUND" ]; then
+              APP_ROOT="$(dirname "$FOUND")"
+            fi
+          fi
+          if [ -z "$APP_ROOT" ]; then
+            echo "::error::Could not locate index.html under the downloaded artifact."
+            echo "Tree under dist:"; ls -R dist || true
+            exit 1
+          fi
+          echo "Using APP_ROOT=$APP_ROOT"
+          # make available to subsequent steps
+          echo "APP_ROOT=$APP_ROOT" >> "$GITHUB_ENV"
+          # also export for this step (not strictly needed anymore)
+          export APP_ROOT
+          ls -la "$APP_ROOT"
+
+      - name: Write staticwebapp.config.json (proxy /api to App Service)
+        shell: bash
+        run: |
+          cat > "$APP_ROOT/staticwebapp.config.json" << 'EOF'
           {
             "routes": [
               {
-                "route": "/api/*",
-                "rewrite": "https://issuetracker-api.azurewebsites.net/api/*"
+                "route": "/api/{*path}",
+                "rewrite": "https://issuetracker-api.azurewebsites.net/api/{path}",
+                "allowedRoles": [ "anonymous" ],
+                "methods": [ "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS" ]
               }
             ],
             "navigationFallback": {
               "rewrite": "/index.html",
-              "exclude": ["/api/*", "/assets/*", "/*.{css,js,png,jpg,svg,ico,webp,woff,woff2}"]
+              "exclude": [ "/api/*", "/assets/*", "/*.{css,js,png,jpg,svg,ico,webp,woff,woff2}" ]
             }
           }
           EOF
           echo "----- staticwebapp.config.json -----"
-          cat dist/staticwebapp.config.json
+          cat "$APP_ROOT/staticwebapp.config.json"
 
-      - name: Verify SWA token (push only)
+      - name: Verify SWA token
         run: |
           if [ -z "${{ secrets.SWA_DEPLOYMENT_TOKEN }}" ]; then
             echo "Missing SWA_DEPLOYMENT_TOKEN secret." && exit 1
@@ -168,7 +208,7 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.SWA_DEPLOYMENT_TOKEN }}
           repo_token: ${{ github.token }}
           action: upload
-          app_location: "dist"
+          app_location: ${{ env.APP_ROOT }}
           skip_app_build: true
           production_branch: ${{ github.ref_name }}
 
@@ -181,9 +221,4 @@ jobs:
         run: |
           echo "🚀 Deployment completed!"
           echo "API: https://${{ env.API_APP_NAME }}.azurewebsites.net"
-          if [ -n "${{ secrets.SWA_HOSTNAME }}" ]; then
-            echo "Frontend: https://${{ secrets.SWA_HOSTNAME }}"
-          else
-            echo "Frontend deployed to your Azure Static Web App."
-          fi
-          echo "Portal (resource group): https://portal.azure.com/#@/resource/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.RESOURCE_GROUP }}"
+          echo "Frontend deployed via Azure Static Web Apps."
