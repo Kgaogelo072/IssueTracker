@@ -93,6 +93,10 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+// Diagnostic endpoint to check available routes
+app.MapGet("/__routes", (EndpointDataSource es) =>
+    Results.Json(es.Endpoints.Select(e => e.DisplayName)));
+
 // Apply migrations
 using (var scope = app.Services.CreateScope())
 {
